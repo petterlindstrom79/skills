@@ -3,11 +3,16 @@
   "slug": "codesession",
   "displayName": "Codesession",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1772135588189,
-    "commit": "https://github.com/openclaw/skills/commit/e549e13a93af62e4ea6b3fac21252ad59d2a84f8"
+    "version": "2.4.0",
+    "publishedAt": 1772316807264,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1772135588189,
+      "commit": "https://github.com/openclaw/skills/commit/e549e13a93af62e4ea6b3fac21252ad59d2a84f8"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1771341904261,
