@@ -1,0 +1,11 @@
+{
+  "owner": "jisuapi",
+  "slug": "trademark",
+  "displayName": "极速数据商标信息查询",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772514875215,
+    "commit": null
+  },
+  "history": []
+}
