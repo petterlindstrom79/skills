@@ -9,6 +9,23 @@ description: "Senior-level code review for GitLab merge requests. Use when: revi
 
 Automated code review tool for GitLab merge requests. Analyzes code for security vulnerabilities, code quality issues, and best practices violations.
 
+## ⚠️ Important: GitLab Access
+
+**This tool uses GitLab API, NOT web pages.**
+
+When reviewing a GitLab MR:
+1. **DO NOT** try to fetch the MR URL as a web page (will fail - redirects to login)
+2. **DO** use the CLI tool with credentials from `~/.openclaw/credentials/gitlab.json`
+3. The tool automatically authenticates via `PRIVATE-TOKEN` header
+
+Example workflow:
+```
+User: "Review MR !2223 in project kks/backend/bpm-platform"
+
+✅ Correct: Run CLI tool with token authentication
+❌ Wrong: Try to fetch https://git.company.com/... as web page
+```
+
 ## When to Use
 
 - Review merge requests automatically
@@ -92,6 +109,34 @@ Python, JavaScript/TypeScript, Java, Go, Ruby, PHP, YAML, JSON
 Default ignores: `*.min.js`, `*.min.css`, `*.lock`, `package-lock.json`, `pnpm-lock.yaml`, `forms/*.json`
 
 Override with `--ignore "*.json" "*.lock"` or `--no-default-ignores`
+
+## Troubleshooting
+
+### "GitLab redirects to login page"
+
+**Problem:** Trying to fetch GitLab URL as web page instead of using API.
+
+**Solution:** Use the CLI tool with token authentication:
+```bash
+python scripts/gitlab_code_review.py --url "https://gitlab.com/group/project/-/merge_requests/123"
+```
+
+### "401 Unauthorized"
+
+**Problem:** Token is invalid or expired.
+
+**Solution:** 
+1. Check token in `~/.openclaw/credentials/gitlab.json`
+2. Generate new token: GitLab → Settings → Access Tokens
+3. Required scopes: `read_api`, `write_repository`
+
+### "404 Not Found"
+
+**Problem:** Project path or MR IID is incorrect.
+
+**Solution:** Verify the URL format:
+- ✅ `https://gitlab.com/group/project/-/merge_requests/123`
+- ❌ `https://gitlab.com/group/project/merge_requests/123` (old format may not work)
 
 ---
 
