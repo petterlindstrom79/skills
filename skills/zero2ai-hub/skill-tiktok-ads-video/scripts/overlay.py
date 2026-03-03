@@ -167,9 +167,52 @@ def style_subtitle_talk(t, w, h, hook, claim, cta, accent, duration):
 
     return np.array(img)
 
+# ── STYLE: Big Center ───────────────────────────────────────────────────────
+def style_big_center(t, w, h, hook, claim, cta, accent, duration):
+    """Large centered text with price bar at top. Best for bold product reveals."""
+    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    cx = w // 2
+    cy = int(h * 0.50)
+
+    # ── Top price bar (always visible) ──────────────────────────────────────
+    bar_h = 70
+    draw.rectangle([0, 0, w, bar_h], fill=(15, 15, 15, 220))
+    price_font = get_font(F_BLACK, 38)
+    bb = draw.textbbox((0, 0), cta, font=price_font)
+    pw = bb[2] - bb[0]; ph = bb[3] - bb[1]
+    draw.text(
+        (cx - pw // 2 - bb[0], (bar_h - ph) // 2 - bb[1]),
+        cta, font=price_font, fill=(255, 215, 0, 230)
+    )
+
+    # ── Centered phrases with timing ─────────────────────────────────────────
+    content = hook + claim
+    cursor = 0.0
+    for text, dur, size in content:
+        end = cursor + dur
+        if cursor - 0.05 <= t < end + 0.12:
+            a = al(t, cursor, end + 0.1, f=0.16)
+            elapsed = t - cursor
+            scale = max(1.0, 1.08 - elapsed * 0.7) if elapsed < 0.15 else 1.0
+            fsize = int(size * scale)
+            f = get_font(F_BLACK, fsize)
+            bb2 = draw.textbbox((0, 0), text, font=f)
+            xo, yo = bb2[0], bb2[1]
+            vw = bb2[2] - bb2[0]; vh = bb2[3] - bb2[1]
+            x = cx - vw // 2 - xo
+            y = cy - vh // 2 - yo
+            draw.text((x, y), text, font=f,
+                      fill=(0, 0, 0, a), stroke_width=4, stroke_fill=(0, 0, 0, a))
+            draw.text((x, y), text, font=f, fill=(*accent, a))
+        cursor += dur
+
+    return np.array(img)
+
 STYLES = {
     'phrase_slam':   style_phrase_slam,
     'subtitle_talk': style_subtitle_talk,
+    'big_center':    style_big_center,
 }
 
 def main():
@@ -177,7 +220,7 @@ def main():
     ap.add_argument('--video',   required=True)
     ap.add_argument('--output',  required=True)
     ap.add_argument('--product', required=True, choices=list(PRODUCTS.keys()))
-    ap.add_argument('--style',   default='random', choices=list(STYLES.keys())+['random'])
+    ap.add_argument('--style',   default='random', choices=list(STYLES.keys()) + ['random'])
     args = ap.parse_args()
 
     p = PRODUCTS[args.product]

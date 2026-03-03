@@ -1,6 +1,6 @@
 ---
 name: skill-tiktok-ads-video
-version: 2.0.0
+version: 2.1.0
 description: Generate TikTok-style short-form ad videos with animated pill captions. Takes a base MP4 (Veo/Runway/Kling), overlays animated captions with fade in/out, mixes background audio. Built-in product presets — no captions JSON file needed. Use for TikTok ads, Reels, YouTube Shorts product videos.
 metadata:
   openclaw:
@@ -29,6 +29,7 @@ uv run --with moviepy --with pillow scripts/overlay.py \
 ### Styles
 - `phrase_slam` — Bold full-screen phrase drops
 - `subtitle_talk` — Conversational subtitle-style captions
+- `big_center` — Large centered text with price bar at top. Best for bold product reveals.
 - `random` — Randomly picks a style
 
 ### Optional audio
