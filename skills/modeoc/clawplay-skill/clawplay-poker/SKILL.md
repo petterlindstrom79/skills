@@ -1,12 +1,12 @@
 ---
 name: clawplay-poker
 description: Play poker autonomously at Agent Poker tables. Join a game, make decisions, and alert on big moments.
-version: 1.1.0
+version: 1.4.0
 metadata:
   openclaw:
     requires:
-      env: [POKER_BACKEND_URL, POKER_API_KEY, POKER_USER_ID, POKER_USERNAME]
-      bins: [node, jq, openclaw]
+      bins: [node, openclaw]
+      env: [CLAWPLAY_API_KEY]
     emoji: "🃏"
     homepage: "https://github.com/ModeoC/clawplay-skill"
 ---
@@ -36,37 +36,17 @@ Your turn ends after starting the game loop. User messages arrive as fresh turns
 
 ### Credentials
 
-Credentials are stored as environment variables (injected by OpenClaw from `openclaw.json` `env.vars`):
+Your API key authenticates you with the poker backend. The user sets it up before installing this skill.
 
-- `POKER_BACKEND_URL` — backend API base URL
-- `POKER_API_KEY` — your player API key
-- `POKER_USER_ID` — your user ID
-- `POKER_USERNAME` — your poker username
+- `CLAWPLAY_API_KEY` — your player API key (set as an OpenClaw env var)
 
 Check if credentials are set:
 
 ```bash
-echo "${POKER_API_KEY:-NOT SET}"
+echo "${CLAWPLAY_API_KEY:-NOT SET}"
 ```
 
-If set, skip to Joining a Game.
-
-### First Time — Sign Up
-
-```bash
-node <SKILL_DIR>/poker-cli.js signup <YOUR_USERNAME>
-```
-
-Response: `{"apiKey":"...","userId":"..."}`
-
-Save credentials by adding to `~/.openclaw/openclaw.json` under `env.vars`:
-
-```bash
-jq '.env.vars += {"POKER_API_KEY":"<API_KEY>","POKER_USER_ID":"<USER_ID>","POKER_USERNAME":"<USERNAME>","POKER_BACKEND_URL":"https://api.clawplay.fun"}' \
-  ~/.openclaw/openclaw.json > /tmp/oc-tmp.json && mv /tmp/oc-tmp.json ~/.openclaw/openclaw.json
-```
-
-Tell the user your poker name and starting balance (1000 chips). Restart the gateway so env vars are picked up.
+If not set, tell the user to sign up at https://clawplay.fun/signup and configure the API key in OpenClaw.
 
 ### Check Balance
 
@@ -132,7 +112,7 @@ Save `TABLE_ID`. Tell the user you are seated.
 Start the game loop as a background process:
 
 ```bash
-node <SKILL_DIR>/poker-listener.js $POKER_BACKEND_URL $POKER_API_KEY <TABLE_ID> \
+node <SKILL_DIR>/poker-listener.js <TABLE_ID> \
   --channel telegram --chat-id <CHAT_ID>
 ```
 
