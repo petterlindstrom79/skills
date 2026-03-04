@@ -33,32 +33,37 @@ blackboard.commitChange(changeId);     // atomic write with file-system mutex
 
 ## Component Overview
 
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1e293b', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#475569', 'lineColor': '#94a3b8', 'clusterBkg': '#0f172a', 'clusterBorder': '#334155', 'edgeLabelBackground': '#1e293b', 'edgeLabelColor': '#cbd5e1', 'titleColor': '#e2e8f0'}}}%%
+flowchart TD
+    classDef app        fill:#1e3a5f,stroke:#3b82f6,color:#bfdbfe,font-weight:bold
+    classDef security   fill:#451a03,stroke:#d97706,color:#fde68a
+    classDef routing    fill:#14532d,stroke:#16a34a,color:#bbf7d0
+    classDef quality    fill:#3b0764,stroke:#9333ea,color:#e9d5ff
+    classDef blackboard fill:#0c4a6e,stroke:#0284c7,color:#bae6fd
+    classDef adapters   fill:#064e3b,stroke:#059669,color:#a7f3d0
+    classDef audit      fill:#1e293b,stroke:#475569,color:#94a3b8
+
+    App["Your Application"]:::app
+    App -->|"createSwarmOrchestrator()"| SO
+
+    subgraph SO["SwarmOrchestrator"]
+        AG["AuthGuardian\n(permission gating)"]:::security
+        AR["AdapterRegistry\n(route tasks to frameworks)"]:::routing
+        QG["QualityGateAgent\n(validate blackboard writes)"]:::quality
+        BB["SharedBlackboard\n(shared agent state)\npropose → validate → commit\nfilesystem mutex"]:::blackboard
+        AD["Adapters — plug any framework in, swap freely\nLangChain · AutoGen · CrewAI · MCP · LlamaIndex · …"]:::adapters
+
+        AG -->|"grant / deny"| AR
+        AR -->|"tasks dispatched"| AD
+        AD -->|"writes results"| BB
+        QG -->|"validates"| BB
+    end
+
+    SO --> AUDIT["data/audit_log.jsonl"]:::audit
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Your Application                        │
-└──────────────────────────┬──────────────────────────────────┘
-                           │  createSwarmOrchestrator()
-┌──────────────────────────▼──────────────────────────────────┐
-│                  SwarmOrchestrator                          │
-│                                                             │
-│  ┌──────────────┐  ┌───────────────┐  ┌─────────────────┐  │
-│  │ AdapterRegistry│  │ AuthGuardian  │  │ FederatedBudget │  │
-│  │ (route tasks) │  │ (permissions) │  │ (token ceilings)│  │
-│  └──────┬───────┘  └───────────────┘  └─────────────────┘  │
-│         │                                                    │
-│  ┌──────▼──────────────────────────────────────────────┐   │
-│  │            LockedBlackboard (shared state)           │   │
-│  │   propose → validate → commit  (file-system mutex)  │   │
-│  └──────────────────────────────────────────────────────┘   │
-│         │                                                    │
-│  ┌──────▼───────────────────────────────────────────────┐  │
-│  │  Adapters (plug any framework in, swap out freely)   │  │
-│  │  LangChain │ AutoGen │ CrewAI │ MCP │ LlamaIndex │…  │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                           │
-          HMAC-signed audit log (data/audit_log.jsonl)
-```
+
+> `FederatedBudget` is a standalone export — instantiate it separately and optionally wire it to a blackboard backend for cross-node token budget enforcement.
 
 ### LockedBlackboard
 
