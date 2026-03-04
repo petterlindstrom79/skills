@@ -86,7 +86,10 @@ function processImageUrl(imageSource) {
     '.gif': 'image/gif',
     '.webp': 'image/webp'
   };
-  const mimeType = mimeTypes[ext] || 'image/jpeg';
+  const mimeType = mimeTypes[ext];
+  if (!mimeType) {
+    throw new Error(`Unsupported image type: ${ext || '(no extension)'}. Supported types: .jpg, .jpeg, .png, .gif, .webp`);
+  }
   const fileContent = fs.readFileSync(filePath);
   const base64 = fileContent.toString('base64');
 
