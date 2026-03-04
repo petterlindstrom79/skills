@@ -1,11 +1,17 @@
 {
   "owner": "zw008",
   "slug": "vmware-monitor",
-  "displayName": "Vmware Monitor",
+  "displayName": "VMware Monitor",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1772501996219,
-    "commit": "https://github.com/openclaw/skills/commit/b0d4749f965e1fae50a27ee89114eafc5a40ab8b"
+    "version": "1.0.9",
+    "publishedAt": 1772586009299,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1772501996219,
+      "commit": "https://github.com/openclaw/skills/commit/b0d4749f965e1fae50a27ee89114eafc5a40ab8b"
+    }
+  ]
 }

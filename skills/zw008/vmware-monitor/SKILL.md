@@ -63,6 +63,41 @@ npx skills add zw008/VMware-Monitor
 
 All tools accept optional `target` parameter (e.g., `"home-esxi"`, `"prod-vcenter"`).
 
+### MCP Direct Calling Pattern (Default)
+
+When this skill is activated, **always use direct Python import** to call MCP tools:
+
+```python
+# Set working directory and use the project venv
+# cd /path/to/VMware-Monitor
+
+from mcp_server.server import (
+    list_virtual_machines,
+    list_esxi_hosts,
+    list_all_datastores,
+    list_all_clusters,
+    get_alarms,
+    get_events,
+    vm_info,
+)
+
+# Example: List all VMs
+result = list_virtual_machines(target='home-esxi')
+
+# Example: Get alarms
+alarms = get_alarms(target='home-vcenter')
+
+# Example: Get VM details
+info = vm_info(vm_name='my-vm', target='home-esxi')
+
+# Example: Get events (last 24h, warning+)
+events = get_events(hours=24, severity='warning', target='home-esxi')
+```
+
+**Calling priority:**
+1. ✅ Direct import from `mcp_server.server` (fastest, default)
+2. ⚠️ CLI fallback: `vmware-monitor inventory vms` (when import fails)
+
 ### MCP Setup (Claude Code)
 
 Add to `~/.claude/settings.json`:
@@ -184,7 +219,7 @@ Direct users to **VMware-AIops** (`clawhub install vmware-aiops`) for these.
 | Code-Level Isolation | Independent repository — zero destructive functions in codebase |
 | Audit Trail | All queries logged to `~/.vmware-monitor/audit.log` (JSONL) |
 | Password Protection | `.env` file loading with permission check (warn if not 600) |
-| SSL Self-signed Support | `disableSslCertValidation` for ESXi 8.0 self-signed certs |
+| SSL Self-signed Support | `disableSslCertValidation` — **only** for ESXi hosts with self-signed certificates in isolated lab/home environments. Production environments should use CA-signed certificates with full TLS verification enabled. |
 
 ## Version Compatibility
 
@@ -257,6 +292,15 @@ cd VMware-Monitor
 uv venv && source .venv/bin/activate
 uv pip install -e .
 ```
+
+## Security
+
+- **Read-Only by Design**: This is an independent repository with zero destructive code paths. No power off, delete, create, reconfigure, or migrate functions exist in the codebase.
+- **TLS Verification**: Enabled by default. The `disableSslCertValidation` option exists solely for ESXi hosts using self-signed certificates (common in home labs). In production, always use CA-signed certificates with full TLS verification.
+- **Credentials**: Loaded exclusively from environment variables via `.env` file (`chmod 600`). Never passed in CLI arguments, config files, or MCP messages.
+- **Webhook Data Scope**: Webhook notifications send monitoring summaries to **user-configured URLs only** (Slack, Discord, or any HTTP endpoint you control). No data is sent to third-party services by default.
+- **Prompt Injection Protection**: All vSphere-sourced content (event messages, host logs) is truncated, stripped of control characters, and wrapped in boundary markers before output.
+- **Code Review**: We recommend reviewing the source code and commit history before deploying in production. Run in an isolated environment for initial evaluation.
 
 ## License
 
