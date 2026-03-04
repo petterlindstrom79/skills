@@ -1,21 +1,76 @@
 ---
 name: IMA Studio Music Generation
-version: 1.0.1
+version: 1.0.2
 category: file-generation
 author: IMA Studio (imastudio.com)
 keywords: imastudio, music generation, ai music
 argument-hint: "[music description or lyrics]"
 description: >
-  Use for AI music generation via IMA Open API. Supports text_to_music with 3 models.
-  IMPORTANT — Default model selection rule: always recommend the NEWEST and most POPULAR model,
-  NOT the cheapest. Default: Suno (model_id=sonic, model_version=sonic-v5, 25pts) — latest
-  engine, full-featured with custom mode, lyrics, vocal gender, style tags. Alternative:
-  DouBao BGM (model=GenBGM, 30pts) for background music; DouBao Song (model=GenSong, 30pts)
-  for songs. Use Suno sonic by default unless user asks for BGM/song only.
-  Output is MP3/WAV. Requires an ima_* API key.
+  ⚠️ BEFORE using this skill: READ ima-knowledge-ai skill FIRST! Especially workflow-design.md
+  for multi-step music production. Use for AI music generation via IMA Open API. Supports 
+  text_to_music with 3 models. IMPORTANT — Default model selection rule: always recommend 
+  the NEWEST and most POPULAR model, NOT the cheapest. Default: Suno (model_id=sonic, 
+  model_version=sonic-v5, 25pts) — latest engine, full-featured with custom mode, lyrics, 
+  vocal gender, style tags. Alternative: DouBao BGM (model=GenBGM, 30pts) for background music; 
+  DouBao Song (model=GenSong, 30pts) for songs. Use Suno sonic by default unless user asks 
+  for BGM/song only. Output is MP3/WAV. Requires an ima_* API key.
 ---
 
 # IMA Voice AI Creation
+
+## ⚠️ MANDATORY PRE-CHECK: Read Knowledge Base First!
+
+**BEFORE executing ANY music generation task, you MUST:**
+
+1. **Check for workflow complexity** — Read `ima-knowledge-ai/workflow-design.md` if:
+   - User mentions: "MV"、"配乐"、"完整作品"、"多步骤"、"soundtrack"
+   - Task involves: video + music coordination, multi-track production, integrated workflows
+   - Complex requirements that need task decomposition
+
+2. **Check model selection** — Read `ima-knowledge-ai/model-selection.md` if:
+   - Unsure which model to use (Suno vs DouBao BGM vs DouBao Song)
+   - Need cost/quality trade-off guidance
+   - User specifies budget or quality requirements
+
+**Why this matters:**
+- Music generation is often part of a larger workflow (video + music, story + soundtrack)
+- Wrong model choice can waste credits or produce inappropriate results
+- Multi-step workflows need proper task sequencing
+
+**Example workflow case:**
+```
+User: "帮我做个产品宣传MV，有背景音乐"
+
+❌ Wrong: 直接生成音乐 (music alone, no coordination with video)
+
+✅ Right: 
+  1. Read workflow-design.md
+  2. Decompose: Script → Video shots → Background music (matching video duration/mood)
+  3. Generate video first (get duration)
+  4. Generate BGM with matching duration and style
+```
+
+**How to check:**
+```python
+# Step 1: Read knowledge base if needed
+if complex_workflow or multi_step:
+    read("~/.openclaw/skills/ima-knowledge-ai/references/workflow-design.md")
+
+if unsure_model_choice:
+    read("~/.openclaw/skills/ima-knowledge-ai/references/model-selection.md")
+
+# Step 2: Choose appropriate model
+if "background music" or "BGM" or "instrumental":
+    use_doubao_bgm()  # 30pts, pure instrumental
+elif "song" or "lyrics" or "vocals":
+    use_suno_sonic()  # 25pts, full-featured with lyrics
+else:
+    use_suno_sonic()  # Default: most versatile
+```
+
+**No exceptions** — for simple single-track requests, you can proceed directly. For complex workflows, read the knowledge base first.
+
+---
 
 ## ⚙️ How This Skill Works
 

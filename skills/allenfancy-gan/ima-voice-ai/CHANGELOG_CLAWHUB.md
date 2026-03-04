@@ -5,6 +5,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), version
 
 ---
 
+## v1.0.2 (2026-03-03) — Knowledge Base Integration
+
+### 🎓 Improved Agent Decision-Making
+
+**Added mandatory knowledge base consultation to improve workflow planning and model selection for music generation.**
+
+#### Added
+- **YAML Description Warning**: Added prominent warning to read `ima-knowledge-ai` skill first
+  - Especially `workflow-design.md` for multi-step music production
+- **MANDATORY PRE-CHECK Section**: New section before main content with:
+  - Workflow complexity check triggers (keywords: "MV", "配乐", "完整作品", "soundtrack", etc.)
+  - Model selection guidance (Suno vs DouBao BGM vs DouBao Song)
+  - Why this matters explanation
+  - Example workflow case (product MV with BGM coordination)
+  - Pseudo-code for proper model selection
+
+#### Changed
+- Version bumped from v1.0.1 to v1.0.2
+
+#### Why This Change?
+
+Knowledge skills have unclear trigger logic compared to functional skills. By embedding knowledge references directly in atomic skills, agents are more likely to consult the knowledge base before execution. Music generation is often part of larger workflows (video + music), requiring proper task sequencing and coordination.
+
+**Test feedback**: Modification improves agent knowledge usage. ⭐⭐⭐⭐⭐
+
+---
+
 ## v1.0.1 (2026-02-28) — Security Clarity Update
 
 ### 🔒 Documentation Clarification
