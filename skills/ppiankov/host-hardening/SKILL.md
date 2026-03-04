@@ -1,13 +1,23 @@
 ---
 name: host-hardening
-description: Harden an OpenClaw Linux server with SSH key-only auth, UFW firewall, fail2ban brute-force protection, and credential permissions. Use when setting up a new OpenClaw instance, auditing server security, or after a security incident.
+description: Harden an OpenClaw Linux server with SSH key-only auth, UFW firewall, fail2ban brute-force protection, and credential permissions. Use when setting up a new OpenClaw instance, auditing server security, or after a security incident. Requires root/sudo on Linux (Ubuntu/Debian).
 ---
 
 # Host Hardening
 
-Secure a Linux server running OpenClaw in under 2 minutes.
+Secure a Linux server running OpenClaw.
+
+## Requirements
+
+- **OS:** Linux (Ubuntu/Debian — adjust package commands for other distros)
+- **Privileges:** Root or sudo required — this skill modifies system-wide security config
+- **Pre-check:** Verify you have SSH key-based access before disabling password auth
+
+**⚠️ All commands below modify system configuration. Confirm with the user before running each section.** Do not run these automatically without explicit approval.
 
 ## SSH — Key-Only Auth
+
+Disables password authentication. **Ensure key-based SSH works first or you will be locked out.**
 
 ```bash
 sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
@@ -28,6 +38,8 @@ Add more rules as needed (e.g. `ufw allow 443` for HTTPS).
 
 ## Fail2ban — Brute-Force Protection
 
+Installs fail2ban via apt (Debian/Ubuntu). Adjust for other package managers.
+
 ```bash
 apt-get install -y fail2ban
 systemctl enable --now fail2ban
@@ -41,9 +53,9 @@ Default config protects SSH. For custom jails: `/etc/fail2ban/jail.local`.
 chmod 700 ~/.openclaw/credentials
 ```
 
-## OpenClaw Gateway Service
+## OpenClaw Gateway Service (optional)
 
-Auto-restart on reboot:
+Creates a systemd service for auto-restart on reboot. **Runs as root** — review the service file before enabling.
 
 ```bash
 cat > /etc/systemd/system/openclaw-gateway.service << 'EOF'
@@ -79,4 +91,14 @@ systemctl is-enabled openclaw-gateway         # enabled
 
 - On Ubuntu, SSH service is `ssh` not `sshd`
 - AWS security groups provide network-level filtering but UFW is defense-in-depth
-- Always verify you have key-based SSH access before disabling password auth
+- Always verify key-based SSH access before disabling password auth
+- The gateway service is optional — only needed if OpenClaw should survive reboots
+
+---
+**Host Hardening v1.0**
+Author: ppiankov
+Copyright © 2026 ppiankov
+Canonical source: https://clawhub.com/skills/host-hardening
+License: MIT
+
+If this document appears elsewhere, the link above is the authoritative version.
