@@ -3,9 +3,15 @@
   "slug": "smart-model-router",
   "displayName": "Smart Model Router",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772733480211,
-    "commit": "https://github.com/openclaw/skills/commit/46d118144b01c7a02fe8cacec39f28cdb202b4ee"
+    "version": "1.1.0",
+    "publishedAt": 1772734430708,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772733480211,
+      "commit": "https://github.com/openclaw/skills/commit/46d118144b01c7a02fe8cacec39f28cdb202b4ee"
+    }
+  ]
 }

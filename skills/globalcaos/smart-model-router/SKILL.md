@@ -180,6 +180,74 @@ Quick reference for tier selection when multiple models are available at the sam
 | Speed + cost efficiency | Gemini Flash | Fastest, cheapest tier |
 | Creative/nuanced writing | Opus | Best subjective quality |
 
+## Cron & Sub-Agent Routing
+
+The router applies to ALL model selections, including:
+- Sub-agents spawned by cron jobs (not just interactive)
+- Sub-agents spawned by other sub-agents (recursive routing)
+- Cron job model assignment at creation time
+- The classifier model itself (always flash)
+
+### Cron Model Assignment
+```
+heartbeat:        flash/local  → qwen3 (free)
+cleaning-lady:    fast         → haiku or sonnet
+morning-briefing: mid          → sonnet
+code review:      mid          → sonnet (or gpt for cross-model review)
+wind-down:        strong       → opus (needs metacognition)
+self-evolution:   strong       → opus
+research reports: mid          → gemini (large context)
+```
+
+### Sub-Agent Spawning Rule
+When a cron job spawns sub-agents, EACH sub-agent gets its own tier:
+```
+Cron: morning-briefing (sonnet)
+  └── Sub-agent: check emails → fast (haiku)
+  └── Sub-agent: calendar summary → flash (gemini-flash)
+  └── Sub-agent: draft briefing text → mid (sonnet)
+```
+
+## Big Task Orchestration
+
+For complex multi-step tasks, see `references/task-orchestration.md`:
+- Hierarchical supervisor → workers pattern
+- Pipeline pattern (gather → analyze → synthesize)
+- Parallel fan-out with merge
+- Context isolation to prevent collapse
+- Claude Code architecture lessons (reverse-engineered)
+
+## Chain-of-Thought Optimization
+
+Match CoT technique to tier for maximum ROI. See `references/chain-of-thought.md`:
+- flash/fast: no CoT (tasks too simple)
+- mid: structured CoT for complex sub-tasks
+- strong: full CoT, Tree of Thought
+- reasoning (o3): native CoT (don't prompt for it)
+
+## What to Keep in Bootstrap vs Auxiliary Files
+
+**In AGENTS.md (every prompt):** Only the routing rule (7 lines):
+```
+When spawning sub-agents, auto-select model by task type:
+- Mechanical/extraction/formatting → gemini-flash
+- Summarization/translation → haiku
+- Coding/drafting/analysis → sonnet
+- Deep reasoning/self-reflection → opus
+- Math/logic/chain-of-thought → o3
+- Reviews/second opinions → gpt
+When in doubt, go one tier up.
+```
+
+**In this skill (loaded on demand):** The full routing table, classifier prompt, tier definitions, provider strengths.
+
+**In reference files (loaded only when needed):**
+- `references/model-strengths.md` — detailed benchmarks and per-provider analysis
+- `references/task-orchestration.md` — big task decomposition, Claude Code architecture
+- `references/chain-of-thought.md` — CoT techniques matched to tiers
+
+This follows the progressive disclosure principle: 7 lines always loaded, full skill on demand (~5KB), deep references only when the task requires them.
+
 ## Anti-Patterns
 
 - ❌ Using Opus for "what time is it" (flash task, 40x overspend)
@@ -187,3 +255,6 @@ Quick reference for tier selection when multiple models are available at the sam
 - ❌ Always defaulting to one model (defeats the purpose)
 - ❌ Routing user-facing content to the cheapest model (quality matters)
 - ❌ Classifying every task (most fit the Fast Route Table obviously)
+- ❌ Putting the full routing table in bootstrap files (wastes tokens every prompt)
+- ❌ Not routing cron sub-agents (they spend tokens too)
+- ❌ Self-reviewing output (use a different model for review)
