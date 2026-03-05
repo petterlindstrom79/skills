@@ -1,0 +1,11 @@
+{
+  "owner": "rare",
+  "slug": "cursor-cli-agent",
+  "displayName": "Cursor CLI Agent",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1772605062129,
+    "commit": null
+  },
+  "history": []
+}
