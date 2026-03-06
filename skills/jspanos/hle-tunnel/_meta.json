@@ -1,0 +1,11 @@
+{
+  "owner": "jspanos",
+  "slug": "hle-tunnel",
+  "displayName": "HLE Tunnel",
+  "latest": {
+    "version": "1.2.0",
+    "publishedAt": 1772734926104,
+    "commit": null
+  },
+  "history": []
+}
