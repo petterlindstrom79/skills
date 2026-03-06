@@ -1,13 +1,18 @@
 {
   "owner": "azure-vision",
   "slug": "caravo",
-  "displayName": "Caravo API Marketplace",
+  "displayName": "Caravo Service Marketplace",
   "latest": {
-    "version": "0.4.13",
-    "publishedAt": 1772617965445,
-    "commit": "https://github.com/openclaw/skills/commit/e6ba55a8910e98dbfaca5df995a7e09b1c35af4d"
+    "version": "0.4.20",
+    "publishedAt": 1772786840639,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.4.13",
+      "publishedAt": 1772617965445,
+      "commit": "https://github.com/openclaw/skills/commit/e6ba55a8910e98dbfaca5df995a7e09b1c35af4d"
+    },
     {
       "version": "0.4.3",
       "publishedAt": 1772462775247,
