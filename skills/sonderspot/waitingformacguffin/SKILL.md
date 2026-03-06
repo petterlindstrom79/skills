@@ -4,6 +4,8 @@ description: Oscar prediction market intelligence from waitingformacguffin.com. 
 allowed-tools: Bash(curl *), Read
 homepage: https://github.com/sonderspot/waitingformacguffin-public
 metadata:
+  version: "1.2.0"
+  last_updated: "2026-02-26"
   clawdbot:
     requires:
       bins:
@@ -23,6 +25,7 @@ Here's what I can do:
 - **Market pulse** -- "What's happening in Oscar markets?" (whale trades, price moves, frontrunner changes)
 - **Deep dive** -- "Tell me about Chalamet" or "Best Picture odds" (full nominee profile with trends, precursors, order book)
 - **Bet picks** -- "Give me your best Oscar bets" (risk-tiered recommendations with ROI and portfolio options)
+- **Precursor sim** -- "DGA just announced, what's the play with $500?" (slippage-aware portfolio with EV and position sizing)
 
 What are you curious about?"
 
@@ -221,6 +224,159 @@ curl -s "https://waitingformacguffin.com/api/oscar/research?query=Chalamet&inclu
 
 ---
 
+## Tool 3: Oscar Precursor Simulation
+
+**When to use**: User asks "DGA just announced, what's the play?", "Build me a portfolio based on SAG results", "I have $500, what should I bet after guild week?", or wants a data-driven portfolio based on precursor award results.
+
+**What it returns**: A slippage-aware portfolio simulation with EV calculations, position sizing (Kelly-inspired), order book slippage, and recommendation labels for each position.
+
+### API Call
+
+```bash
+curl -s "https://waitingformacguffin.com/api/oscar/simulate?precursor=dga&budget=500"
+```
+
+### Parameters
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `precursor` | string | (required) | Which precursor to base the simulation on: `dga`, `sag`, `pga`, `critics-choice`, `golden-globes`, `bafta`, or `all` |
+| `budget` | number | (required) | USD budget for the portfolio (50-100000) |
+| `risk_tolerance` | string | "moderate" | `conservative` (safe, 20% reserve), `moderate` (balanced), `aggressive` (max deployment) |
+| `categories` | string | all applicable | Comma-separated category slugs to limit simulation |
+
+### Risk Tolerance Guide
+
+| Level | Max Single Position | Reserve | Min Edge | Best For |
+|-------|-------------------|---------|----------|----------|
+| Conservative | 50% of budget | 20% | 10%+ edge | "I want to sleep at night" |
+| Moderate | 70% of budget | 10% | 5%+ edge | Balanced risk/reward (recommended) |
+| Aggressive | 90% of budget | 5% | 0%+ edge | "I trust the data, deploy everything" |
+
+### Response Structure
+
+```json
+{
+  "strategy": {
+    "name": "DGA Awards Portfolio Simulation",
+    "precursor": "dga",
+    "riskTolerance": "moderate",
+    "totalBudget": 500,
+    "deployedBudget": 450,
+    "reserveBudget": 50,
+    "expectedReturn": 520,
+    "expectedROI": 15.6
+  },
+  "positions": [
+    {
+      "nominee": "Paul Thomas Anderson",
+      "category": "best-director",
+      "categoryName": "Best Director",
+      "ticker": "KXOSCARDIR-26-PAU",
+      "currentPrice": 72,
+      "impliedProb": 72.0,
+      "precursorProb": 88.0,
+      "precursorSource": "DGA Awards",
+      "edge": 16.0,
+      "allocatedBudget": 300,
+      "contracts": 416,
+      "avgFillPrice": 72.2,
+      "slippagePct": 0.3,
+      "kalshiFee": 5.92,
+      "netExpectedProfit": 66.08,
+      "recommendation": "strong_buy",
+      "reasoning": "Paul Thomas Anderson won DGA Awards (88% Oscar correlation). 16.0% edge over market price. Strong setup: large edge with healthy liquidity."
+    }
+  ],
+  "warnings": [],
+  "disclaimer": "This is a simulation for educational purposes only...",
+  "meta": {
+    "generated_at": "2026-02-19T...",
+    "data_sources": { "precursor_data": "2026-02-09", "live_odds": true, "order_books": 2 },
+    "latency_ms": 2100
+  }
+}
+```
+
+### Recommendation Labels
+
+| Label | Criteria | Icon |
+|-------|----------|------|
+| `strong_buy` | Edge 20%+ AND slippage <= 3% | !!! |
+| `buy` | Edge 10%+ | !! |
+| `speculative` | Edge > 0% | ! |
+| `skip` | No edge or below risk threshold | -- |
+
+### How to Present Results
+
+1. **Lead with strategy summary**: precursor name, budget, risk tolerance, deployed vs reserve
+2. **Show each position** as a structured block:
+   ```
+   {recommendation_icon} **{nominee}** -- {categoryName}
+   ├─ Price: {currentPrice}c (market says {impliedProb}% / precursor says {precursorProb}%)
+   ├─ Edge: {edge}% | Allocated: ${allocatedBudget}
+   ├─ Fill: {contracts} contracts @ {avgFillPrice}c avg ({slippagePct}% slippage)
+   ├─ Kalshi fee: ${kalshiFee} | Net expected profit: ${netExpectedProfit}
+   └─ {reasoning}
+   ```
+3. **Summary table** for 2+ positions
+4. **Show warnings** if any (liquidity issues, missing data)
+5. **Always show disclaimer**
+
+### Examples
+
+```bash
+# DGA just announced — what's the play with $500?
+curl -s "https://waitingformacguffin.com/api/oscar/simulate?precursor=dga&budget=500"
+
+# SAG winners, conservative, acting categories only
+curl -s "https://waitingformacguffin.com/api/oscar/simulate?precursor=sag&budget=1000&risk_tolerance=conservative&categories=best-actor,best-actress,supporting-actor,supporting-actress"
+
+# All precursors combined, aggressive $2000 portfolio
+curl -s "https://waitingformacguffin.com/api/oscar/simulate?precursor=all&budget=2000&risk_tolerance=aggressive"
+
+# PGA for Best Picture only
+curl -s "https://waitingformacguffin.com/api/oscar/simulate?precursor=pga&budget=300&categories=best-picture"
+```
+
+---
+
+## Supporting Endpoint: Precursor Data
+
+Raw precursor data enriched with live odds and correlation scores. Use when you need precursor details without a full portfolio simulation.
+
+### API Call
+
+```bash
+curl -s "https://waitingformacguffin.com/api/precursors"
+```
+
+### Parameters
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `category` | string | all big 6 | Single category slug to filter |
+| `precursor` | string | all | Single precursor ID to filter winners |
+
+### What it Returns
+
+For each category: nominees with their precursor wins, correlation rates, precursor scores (0-100), and current odds. Also includes the award calendar with completed/upcoming status.
+
+### Examples
+
+```bash
+# All categories with all precursor data
+curl -s "https://waitingformacguffin.com/api/precursors"
+
+# Just Best Director
+curl -s "https://waitingformacguffin.com/api/precursors?category=best-director"
+
+# Only DGA winners across all categories
+curl -s "https://waitingformacguffin.com/api/precursors?precursor=dga"
+```
+
+---
+
 ## Available Categories
 
 `best-picture`, `best-director`, `best-actor`, `best-actress`, `supporting-actor`, `supporting-actress`, `best-cinematography`, `best-original-screenplay`, `best-adapted-screenplay`, `best-international-feature`, `best-film-editing`, `best-costume-design`, `best-original-song`, `best-original-score`, `best-production-design`, `best-sound`, `best-documentary-feature`, `best-makeup-hairstyling`, `best-visual-effects`
@@ -359,3 +515,176 @@ Even if the user asks about betting, stay informational if:
 - They ask about a **single specific nominee** ("Should I bet on Chalamet?") -- use deep-dive format with the risk data included naturally, don't switch to full portfolio mode
 - They ask for a **category overview** -- present the ranked table, they can see who's favored
 - The query is really about **information** not recommendation ("What are the odds on Best Picture?")
+
+---
+
+## Platform-Aware Formatting
+
+Detect the platform context and adapt your output formatting accordingly. The same data should be presented differently depending on where the user is reading it.
+
+### How to Detect Platform
+
+- **Telegram**: The user is interacting through a Telegram bot (ClawdBot, or any bot using the skill via Telegram). Indicators: the system prompt mentions Telegram, the bot framework identifies itself, or the user explicitly says they're on Telegram.
+- **Default (Desktop/Web)**: Claude Code, claude.ai, or any rich-markdown environment. Use the standard formatting described in the sections above.
+
+When uncertain, ask: "Are you reading this on Telegram or a desktop app? I'll format for your screen."
+
+---
+
+### Telegram Formatting Rules
+
+When the user is on Telegram, apply ALL of the following rules. These override the default formatting above.
+
+#### General Principles
+
+1. **Mobile-first**: Assume a narrow screen (~40 characters comfortable). Front-load key numbers.
+2. **No markdown tables**: Telegram does not render `| col | col |` tables. Use stacked lists instead.
+3. **No tree characters**: Replace `├─` / `└─` structures with compact indented lines using bullet emojis or `▸`.
+4. **Bold via words, not syntax**: Use CAPS or emoji markers for emphasis instead of `**bold**` — the rendering depends on the bot's parse mode and may not support markdown. If the bot confirms HTML parse mode, use `<b>` tags.
+5. **One data point per line**: Each line should convey exactly one fact. No compound sentences.
+6. **Separator lines**: Use a single blank line between sections, not `---` or `────`.
+7. **Link previews**: Append links on their own line at the very end; never inline.
+
+#### Oscar Brief (Telegram)
+
+```
+📊 Oscar Markets — {overall_sentiment}
+🐋 {whale_trade_count_24h} whale trades (24h)
+
+Frontrunners:
+▸ Best Picture: {name} {price}c
+▸ Best Director: {name} {price}c
+▸ Best Actor: {name} {price}c
+▸ Best Actress: {name} {price}c
+▸ Supporting Actor: {name} {price}c
+▸ Supporting Actress: {name} {price}c
+
+{if signals exist}
+Signals:
+🔴 {major signal headline}
+🟡 {significant signal headline}
+⚪ {notable signal headline}
+
+{if no signals}
+No significant moves — markets are quiet.
+```
+
+#### Nominee Deep-Dive (Telegram)
+
+```
+{name} — {categoryName}
+Ticker: {ticker}
+
+💰 {current}c ({win_pct}% win / {loss_pct}% loss)
+📈 7d trend: {trend7d > 0 ? "▲" : "▼"}{abs(trend7d)}pts — rank #{rank}/{categorySize}
+🏆 Precursors: {winCount} wins ({wins list})
+🐋 Whales: {sentiment} — {tradeCount} trades, ${totalVolumeUsd}
+📖 Book: best ask {bestAsk}c, {slippage assessment}
+📰 {news headline} ({source}, {sentiment})
+
+Assessment: {edgeIndicator}
+{summary}
+
+Risks: {risks as comma-separated}
+Catalysts: {catalysts as comma-separated}
+```
+
+#### Category Overview (Telegram)
+
+```
+{categoryName}
+
+1. {name} — {price}c {trend > 0 ? "▲" : "▼"}{abs(trend)}
+2. {name} — {price}c {trend > 0 ? "▲" : "▼"}{abs(trend)}
+3. {name} — {price}c {trend > 0 ? "▲" : "▼"}{abs(trend)}
+...
+```
+
+Keep to top 5–6 nominees max. If more exist, add: "... and {n} more below 5c"
+
+#### Bet Picks (Telegram)
+
+Replace the tree format and comparison table with a compact stacked card per pick:
+
+```
+{tier_emoji} {Name} — {Category}
+💰 {current}c ({win_pct}% W / {loss_pct}% L)
+💵 $100 → ${payout_per_100} (+{roi_pct}%)
+📊 Gap: {gap_to_second}pts over {runner_up.name}
+🏆 {winCount} precursors | 🐋 {sentiment}
+⚡ {category_volatility} volatility
+→ {1-sentence verdict}
+```
+
+When presenting 3+ picks, replace the markdown comparison table with a compact numbered list:
+
+```
+Quick Compare:
+1. {tier_emoji} {Name} {price}c | +{roi_pct}% | {winCount}🏆
+2. {tier_emoji} {Name} {price}c | +{roi_pct}% | {winCount}🏆
+3. {tier_emoji} {Name} {price}c | +{roi_pct}% | {winCount}🏆
+```
+
+#### Portfolio (Telegram)
+
+Replace table with stacked allocations:
+
+```
+{Portfolio Type} — ${budget} budget
+
+▸ {tier_emoji} {Name}: ${allocation} → ${if_win} if win
+▸ {tier_emoji} {Name}: ${allocation} → ${if_win} if win
+▸ {tier_emoji} {Name}: ${allocation} → ${if_win} if win
+
+Total: ${budget} → ${total_if_win} (+{roi}%)
+```
+
+#### Precursor Simulation (Telegram)
+
+```
+{strategy name}
+Budget: ${totalBudget} | Deployed: ${deployedBudget} | Reserve: ${reserveBudget}
+
+{recommendation_icon} {nominee} — {categoryName}
+💰 {currentPrice}c (mkt {impliedProb}% / precursor {precursorProb}%)
+📊 Edge: {edge}% | ${allocatedBudget} allocated
+📦 {contracts} contracts @ {avgFillPrice}c ({slippagePct}% slip)
+💸 Fee: ${kalshiFee} | Net profit: ${netExpectedProfit}
+→ {reasoning}
+
+{repeat for each position}
+
+{if 2+ positions}
+Summary:
+▸ {nominee}: ${allocatedBudget} → ${netExpectedProfit} net
+▸ {nominee}: ${allocatedBudget} → ${netExpectedProfit} net
+Expected return: ${expectedReturn} (+{expectedROI}%)
+
+{warnings if any}
+
+⚠️ Simulation only — not financial advice.
+```
+
+#### Risk Tier Legend (Telegram)
+
+When presenting 2+ picks, include this compact legend instead of the markdown table:
+
+```
+🟢 Near lock (85%+) · 🟡 Favorite (70-84%)
+🟠 Lean (45-69%) · 🔴 Toss-up (<45%)
+```
+
+#### Welcome Message (Telegram)
+
+Use a shorter version that fits one screen:
+
+```
+🎬 Oscar Market Intelligence
+
+▸ "What's happening?" — market pulse
+▸ "Tell me about Chalamet" — deep dive
+▸ "Best Oscar bets" — risk-tiered picks
+▸ "DGA just announced, $500" — precursor sim
+
+What are you curious about?
+```
