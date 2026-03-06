@@ -1,148 +1,69 @@
----
-name: konto-deploy
-description: "Deploy and run Konto (personal finance dashboard) locally. Use when setting up a new Konto instance, troubleshooting installation, or helping users get started with Konto."
-metadata:
-  openclaw:
-    emoji: "🦎"
-    requires:
-      bins: ["node", "npm", "openssl"]
-    install:
-      - id: clone
-        kind: git
-        repo: https://github.com/angelstreet/konto
-        branch: main
-        label: "Clone Konto repository"
-      - id: deps
-        kind: script
-        cwd: "konto"
-        run: "npm install"
-        label: "Install dependencies"
-      - id: env
-        kind: script
-        cwd: "konto"
-        run: |
-          if [ ! -f backend/.env ]; then
-            cp .env.example backend/.env
-            KEY=$(openssl rand -hex 32)
-            sed -i "s/^DB_ENCRYPTION_KEY=$/DB_ENCRYPTION_KEY=$KEY/" backend/.env
-            echo "Created backend/.env with generated encryption key"
-          else
-            echo "backend/.env already exists, skipping"
-          fi
-        label: "Configure environment"
----
+# Konto — Personal Finance API
 
-# Konto — Local Deployment
+Query personal finance data from Konto (bank accounts, investments, assets, loans, transactions).
 
-Personal & professional finance dashboard. Bank sync, crypto, investments, budget, tax tools.
-
-## Prerequisites
-
-- Node.js 18+ and npm 9+
-- `openssl` (for encryption key generation)
-
-## Installation (3 commands)
-
+## Setup
 ```bash
-git clone https://github.com/angelstreet/konto.git
-cd konto
-npm install
+# ~/.openclaw/secrets/konto.env
+export KONTO_API_KEY="konto_xxxxxxxxxxxx"
+export KONTO_URL="https://konto.angelstreet.io"
 ```
 
-## Configuration
+## Quick Answers
 
+### "How much BTC do I have?"
 ```bash
-# Create env from template
-cp .env.example backend/.env
-
-# Generate and set encryption key
-KEY=$(openssl rand -hex 32)
-sed -i "s/^DB_ENCRYPTION_KEY=$/DB_ENCRYPTION_KEY=$KEY/" backend/.env
+source ~/.openclaw/secrets/konto.env
+curl -s -H "Authorization: Bearer $KONTO_API_KEY" "$KONTO_URL/api/v1/investments" | jq '.investments[] | select(.code | test("BTC|bitcoin"; "i")) | {label, quantity, current_value}'
 ```
 
-### Minimal config (works immediately)
-Only `DB_ENCRYPTION_KEY` is required. Everything else is optional.
-
-### Optional integrations
-| Feature | Env vars | Sign up |
-|---------|----------|---------|
-| Bank sync | `POWENS_CLIENT_ID`, `POWENS_CLIENT_SECRET`, `POWENS_DOMAIN` | [powens.com](https://powens.com) |
-| Production auth | `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` | [clerk.com](https://clerk.com) |
-| Coinbase | `COINBASE_CLIENT_ID`, `COINBASE_CLIENT_SECRET` | [developers.coinbase.com](https://developers.coinbase.com) |
-| Google Drive | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | [console.cloud.google.com](https://console.cloud.google.com) |
-
-## Running
-
+### "What's my net worth?"
 ```bash
-# Start both frontend + backend
-npm run dev
+curl -s -H "Authorization: Bearer $KONTO_API_KEY" "$KONTO_URL/api/v1/summary" | jq '{patrimoine_net, accounts: .accounts.total_balance, investments: .investments.total_value, assets: .assets.total_value, loans: .loans.total_remaining}'
 ```
 
-- Frontend: http://localhost:3004/konto/
-- Backend API: http://localhost:5004/api/
-- Login: `user` / `user` (local dev, no Clerk needed)
-
-## Sandbox / Demo Mode
-
-Konto auto-seeds demo data for the default user:
-- Bank accounts (checking, savings, investment)
-- Crypto wallets (BTC, ETH, XRP)
-- Investment positions (PEA, Assurance Vie, PER)
-- 14 months of transaction history
-- Real estate and vehicle assets
-
-Just log in and explore — no external API keys needed.
-
-## Building for Production
-
+### "When does my loan end?"
 ```bash
-npm run build
-# Frontend: serve frontend/dist/ as static files
-# Backend: node backend/dist/index.js
+curl -s -H "Authorization: Bearer $KONTO_API_KEY" "$KONTO_URL/api/v1/loans" | jq '.loans[] | {name, remaining_amount, end_date, monthly_payment}'
 ```
 
-### Vercel deployment
+### "What are my subscriptions?"
 ```bash
-cd frontend && vercel
-cd backend && vercel
+curl -s -H "Authorization: Bearer $KONTO_API_KEY" "$KONTO_URL/api/v1/summary" | jq '{count: .subscriptions.count, monthly: .subscriptions.monthly}'
 ```
 
-## Ports
+### "How much do I spend on housing?"
+```bash
+curl -s -H "Authorization: Bearer $KONTO_API_KEY" "$KONTO_URL/api/v1/transactions?months=6&category=logement" | jq '{total: .total, transactions: [.transactions[] | {date, label, amount}]}'
+```
 
-| Service | Port | URL |
-|---------|------|-----|
-| Frontend (dev) | 3004 | http://localhost:3004/konto/ |
-| Backend API | 5004 | http://localhost:5004/api/ |
+### "Financial overview"
+```bash
+curl -s -H "Authorization: Bearer $KONTO_API_KEY" "$KONTO_URL/api/v1/summary"
+```
 
-## Troubleshooting
+## Helper Script
+```bash
+bash ~/.openclaw/workspace/skills/konto/scripts/konto.sh summary
+bash ~/.openclaw/workspace/skills/konto/scripts/konto.sh investments
+bash ~/.openclaw/workspace/skills/konto/scripts/konto.sh transactions 3  # last 3 months
+bash ~/.openclaw/workspace/skills/konto/scripts/konto.sh loans
+bash ~/.openclaw/workspace/skills/konto/scripts/konto.sh assets
+bash ~/.openclaw/workspace/skills/konto/scripts/konto.sh accounts
+```
 
-| Problem | Solution |
-|---------|----------|
-| `ENCRYPTION_KEY` error | Run `openssl rand -hex 32` and set in `backend/.env` |
-| Port 3004 in use | `lsof -i :3004` to find process, kill or change `VITE_DEV_PORT` |
-| Port 5004 in use | Change `PORT` in `backend/.env` |
-| Clerk errors locally | Leave `CLERK_SECRET_KEY` empty — local dev bypasses Clerk |
-| Empty dashboard | Log in as `user/user` — demo data seeds on first backend start |
-| Bank sync not working | Requires Powens API keys (optional for demo) |
-
-## Tech Stack
-
-| Layer | Tech |
-|-------|------|
-| Frontend | React 18 + TypeScript + Vite + Tailwind CSS + Recharts |
-| Backend | Hono + TypeScript + Node.js |
-| Database | SQLite (local) or Turso (cloud) |
-| Auth | Clerk (optional) |
-
-## API Endpoints (key ones)
-
+## Endpoints
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/bank/accounts` | Bank accounts |
-| `GET /api/investments` | Investment positions |
-| `GET /api/transactions` | Transaction history |
-| `GET /api/companies` | Companies (pro) |
-| `GET /api/patrimoine/summary` | Net worth summary |
-| `GET /api/preferences` | User preferences |
+| `GET /api/v1/summary` | Full financial overview (start here) |
+| `GET /api/v1/accounts` | Bank accounts list |
+| `GET /api/v1/transactions?months=6&category=X` | Categorized transactions |
+| `GET /api/v1/investments` | Portfolio (ETFs, stocks, crypto) |
+| `GET /api/v1/assets` | Real estate, vehicles |
+| `GET /api/v1/loans` | Active loans |
 
-Full API docs: `docs/API.md` in the repo.
+## Full API Reference
+See `~/shared/projects/konto/docs/api.md` for complete docs including analytics endpoints.
+
+## Scope
+This skill uses a **personal** scope key (free). For cross-user analytics (pro), see the `konto-analytics` skill.
