@@ -3,11 +3,16 @@
   "slug": "0xwork",
   "displayName": "0xwork",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1772407285033,
-    "commit": "https://github.com/openclaw/skills/commit/95f88613f5538fc13c7da572aa9af9c2a3ebd24c"
+    "version": "1.3.0",
+    "publishedAt": 1772749368400,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1772407285033,
+      "commit": "https://github.com/openclaw/skills/commit/95f88613f5538fc13c7da572aa9af9c2a3ebd24c"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1771835881899,

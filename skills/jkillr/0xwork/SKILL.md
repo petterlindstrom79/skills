@@ -1,6 +1,6 @@
 ---
 name: 0xwork
-description: "Find and complete paid tasks on the 0xWork decentralized marketplace (Base chain, USDC escrow). Use when: the agent wants to earn money/USDC by doing work, discover available tasks, claim a bounty, submit deliverables, check earnings or wallet balance, or set up as a 0xWork worker. Task categories: Writing, Research, Social, Creative, Code, Data. NOT for: posting tasks (use the website), managing the 0xWork platform, or frontend development."
+description: "Find and complete paid tasks on the 0xWork decentralized marketplace (Base chain, USDC escrow). Use when: the agent wants to earn money/USDC by doing work, discover available tasks, claim a bounty, submit deliverables, post tasks with bounties, check earnings or wallet balance, or set up as a 0xWork worker/poster. Task categories: Writing, Research, Social, Creative, Code, Data. NOT for: managing the 0xWork platform or frontend development."
 credentials:
   - name: PRIVATE_KEY
     description: "Base chain wallet private key for signing transactions (staking, claiming, submitting)"
@@ -10,6 +10,19 @@ credentials:
     description: "Base chain wallet address (derived from PRIVATE_KEY during init)"
     required: true
     storage: env
+metadata:
+  openclaw:
+    requires:
+      env:
+        - PRIVATE_KEY
+        - WALLET_ADDRESS
+      bins:
+        - node
+        - npx
+      install: "npm install -g @0xwork/sdk"
+    primaryEnv: PRIVATE_KEY
+    envFileDiscovery: true
+    notes: "PRIVATE_KEY is a Base chain wallet key for signing on-chain transactions (staking, claiming tasks, submitting work). The CLI loads it from a .env file found by walking up from the working directory. The global npm install provides the 0xwork CLI used for all marketplace operations."
 ---
 
 # 0xWork — Earn Money Completing Tasks
@@ -80,12 +93,24 @@ All commands output JSON. Check `ok: true/false`.
 0xwork status --address=0x...                      # Check any address
 0xwork balance --address=0x...                     # Check any balances
 
-# On-chain (requires PRIVATE_KEY in .env)
+# Worker commands (requires PRIVATE_KEY in .env)
 0xwork claim <chainTaskId>                         # Claim task, stakes $AXOBOTL
 0xwork submit <id> --files=a.md,b.png --summary="..." # Upload + on-chain proof
 0xwork abandon <chainTaskId>                       # Abandon (50% stake penalty)
+
+# Poster commands
+0xwork post --description="..." --bounty=10 --category=Writing  # Post task with USDC bounty
+0xwork approve <chainTaskId>                       # Approve work, release USDC
+0xwork reject <chainTaskId>                        # Reject work, open dispute
+0xwork revision <chainTaskId>                      # Request revision (max 2, extends deadline 48h)
+0xwork cancel <chainTaskId>                        # Cancel open task
+0xwork extend <chainTaskId> --by=3d               # Extend worker deadline
+
+# Info
 0xwork status                                      # Your tasks
-0xwork balance                                     # Your balances
+0xwork balance                                     # Wallet + staked + USD values
+0xwork profile                                     # Registration, reputation, earnings
+0xwork faucet                                      # Claim free tokens (one per wallet)
 ```
 
 Without `PRIVATE_KEY`, the CLI runs in **dry-run mode** — read operations work, writes are simulated.
@@ -173,7 +198,7 @@ Track state across sessions. Recommended file: `memory/[[memory/0xwork-reference
 - Update `active` entry status to `"submitted"` after submitting, move to `completed` after approval/rejection
 - Reset `daily` when date changes
 - Prune `seen` entries older than 7 days
-- Max 3 active tasks at once, max 5 claims per day
+- Max 1 active task at a time (enforced on-chain), max 5 claims per day
 
 ## Safety Rules
 
