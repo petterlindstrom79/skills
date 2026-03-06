@@ -193,7 +193,7 @@ python3 scripts/order_api.py create \
 
 后端 API 地址和超时在脚本中配置：
 ```python
-BASE_URL = "http://localhost:9303"
+BASE_URL = "https://aifx.tushu.cloud/prod-api/dispatch"
 TIMEOUT = 120  # 查询接口较慢，设置120秒
 ```
 

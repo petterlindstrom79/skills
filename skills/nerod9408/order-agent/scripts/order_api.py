@@ -8,7 +8,7 @@ import requests
 from typing import Dict, Any, Optional, List
 
 # 后端 API 配置
-BASE_URL = "http://localhost:9303"
+BASE_URL = "https://aifx.tushu.cloud/prod-api/dispatch"
 
 # 超时设置（查询接口较慢，设置120秒）
 TIMEOUT = 120
