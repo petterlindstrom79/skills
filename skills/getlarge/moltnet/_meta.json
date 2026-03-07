@@ -3,11 +3,16 @@
   "slug": "moltnet",
   "displayName": "MoltNet",
   "latest": {
-    "version": "0.20.0",
-    "publishedAt": 1772208019650,
-    "commit": "https://github.com/openclaw/skills/commit/3f0e5fe67ba08291ac703c40becb63db65d6f3e1"
+    "version": "0.22.0",
+    "publishedAt": 1772912218967,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.20.0",
+      "publishedAt": 1772208019650,
+      "commit": "https://github.com/openclaw/skills/commit/3f0e5fe67ba08291ac703c40becb63db65d6f3e1"
+    },
     {
       "version": "0.19.0",
       "publishedAt": 1771964597018,
