@@ -20,11 +20,14 @@ app = FastAPI()
 
 # 1. Product Discovery
 @app.get("/products")
-async def list_products(q: Optional[str] = None):
+async def list_products(q: Optional[str] = None, page: int = 1, limit: int = 50):
     # If q is provided, search products, otherwise return all
     return {
         "success": True,
         "total": 1,
+        "page": page,
+        "limit": limit,
+        "totalPages": 1,
         "products": [
             {
                 "slug": "premium-coffee-beans",
@@ -32,8 +35,8 @@ async def list_products(q: Optional[str] = None):
                 "description": "Light roast with floral notes.",
                 "category": "coffee",
                 "variants": [
-                    {"variant": "250g", "price": 18.00},
-                    {"variant": "500g", "price": 32.00, "label": "Best Value"}
+                    {"variant": "250g", "price": 18.00, "currency": "USD"},
+                    {"variant": "500g", "price": 32.00, "currency": "USD", "label": "Best Value"}
                 ]
             }
         ]
@@ -59,8 +62,9 @@ async def view_cart(x_visitor_id: Optional[str] = Header(None)):
     return {
         "success": True,
         "totalPrice": 18.00,
+        "currency": "USD",
         "items": [
-            {"product_slug": "premium-coffee-beans", "variant": "250g", "quantity": 1, "price": 18.00}
+            {"product_slug": "premium-coffee-beans", "variant": "250g", "quantity": 1, "price": 18.00, "currency": "USD"}
         ]
     }
 
@@ -88,26 +92,88 @@ async def view_cart(x_visitor_id: Optional[str] = Header(None)):
 
 ### Authentication Flow (Stateless)
 1. **Agent Logs In**: `POST /auth/token` with account/password. Return a token.
-2. **Missing Token**: If an endpoint requires auth and token is missing, return `401 Unauthorized`:
+2. **Missing Token**: If an endpoint requires auth and token is missing, return `401`:
    ```json
-   { "error": "Authentication Required", "instruction": "Ask user to login." }
+   { "success": false, "error": "AUTH_REQUIRED", "instruction": "Ask user to login." }
    ```
-3. **Invalid User**: Return `404 Not Found`.
+3. **Invalid Credentials**: Return `401`:
    ```json
-   { "error": "User Not Found", "register_url": "https://yoursite.com/register" }
+   { "success": false, "error": "AUTH_INVALID", "instruction": "Credentials rejected. Check account and password." }
+   ```
+4. **User Not Found**: Return `404`:
+   ```json
+   { "success": false, "error": "USER_NOT_FOUND", "register_url": "https://yoursite.com/register" }
    ```
 
 ---
 
-## 3. API Endpoints Reference
+## 3. Standardized Error Codes
+
+All error responses MUST include a machine-readable `error` code string. This enables Agents to handle errors programmatically without parsing natural language.
+
+The `instruction` field SHOULD accompany the `error` code to provide human/agent-readable guidance, including contextual information like available variants, stock status, or next steps.
+
+### Standard Error Response Format
+```json
+{
+  "success": false,
+  "error": "<ERROR_CODE>",
+  "instruction": "Human-readable guidance for the Agent's next action."
+}
+```
+
+### Error Code Registry
+
+| Code | HTTP Status | When to Use |
+|------|------------|-------------|
+| `PRODUCT_NOT_FOUND` | 404 | Slug does not match any product. |
+| `VARIANT_UNAVAILABLE` | 400 | The requested variant is invalid, discontinued, or out of stock. |
+| `CART_EMPTY` | 400 | Attempted checkout with an empty cart. |
+| `AUTH_REQUIRED` | 401 | Token is missing or expired. |
+| `AUTH_INVALID` | 401 | Credentials were rejected by the server. |
+| `USER_NOT_FOUND` | 404 | Account does not exist. May include `register_url`. |
+| `RATE_LIMITED` | 429 | Too many requests. May include `retry_after` (seconds). |
+| `ACTION_DENIED` | 403 | Operation not allowed (e.g., VIP-only product). |
+| `BAD_REQUEST` | 400 | Generic malformed request (missing required fields). |
+| `INTERNAL_ERROR` | 500 | Server-side failure. |
+
+### Example Error Responses
+
+**Product not found:**
+```json
+{ "success": false, "error": "PRODUCT_NOT_FOUND", "instruction": "No product with slug 'spicy-duck'. Try searching with a different keyword." }
+```
+
+**Variant unavailable (with stock info in instruction):**
+```json
+{ "success": false, "error": "VARIANT_UNAVAILABLE", "instruction": "The 750g variant is currently out of stock. Available variants: 250g, 500g." }
+```
+
+**Rate limited:**
+```json
+{ "success": false, "error": "RATE_LIMITED", "instruction": "Too many requests. Please wait before retrying.", "retry_after": 30 }
+```
+
+> **Design Note**: Information like stock availability, VIP restrictions, or shipping constraints is intentionally communicated through the `instruction` field rather than as mandatory schema fields. This keeps the protocol lean — not all merchants track inventory or have tiered access.
+
+---
+
+## 4. API Endpoints Reference
 
 ### A. Product Discovery
 `GET /products` | `GET /products/{slug}`
-- **Params**: `q` (search query), `category` (filter).
-- **Required Model Attributes**:
+- **Params**: `q` (search query), `category` (filter), `page` (integer, default 1), `limit` (integer, default 50).
+- **Required Response Model (List)**:
+  - `products`: Array of product objects.
+  - `page`: Current page number.
+  - `limit`: Items per page.
+  - `total`: Total items across all pages.
+  - `totalPages`: Total number of pages available.
+- **Required Model Attributes (Product Object)**:
   - `slug`: String
   - `name`: String
-  - `variants` (or array of objects): Must contain a `variant` key (String or Number) and `price` (Number). *(Note: Legacy `gram` is also supported for backward compatibility)*
+  - `variants`: Must contain a `variant` key, `price` (Number), and `currency` (String, e.g., "CNY", "USD").
+- **Error Codes**: `PRODUCT_NOT_FOUND` (for single slug lookup).
 
 ### B. Brand Information
 `GET /brand?category=<type>`
@@ -116,29 +182,27 @@ async def view_cart(x_visitor_id: Optional[str] = Header(None)):
 ### C. Shopping Cart
 `GET /cart` | `POST /cart` | `PUT /cart` | `DELETE /cart`
 - **Request Body**: `{ "product_slug": string, "variant": string/number, "quantity": number }`. 
-- **Response**: Return the full cart snapshot including `totalPrice` and `items`.
+- **Response**: Return the full cart snapshot including `totalPrice`, `currency`, and `items` (each item should also carry its `currency`).
+- **Error Codes**: `PRODUCT_NOT_FOUND`, `VARIANT_UNAVAILABLE`, `BAD_REQUEST`.
 
 ### D. User Profile
 `GET /user/profile` | `PUT /user/profile`
 - **Schema**: Should support common fields like `name`, `address`, and `phone`.
+- **Error Codes**: `AUTH_REQUIRED`.
 
 ### E. Checkout & Payment Handoff
 `POST /orders` | `GET /orders`
 - **Request Body (POST)**: `{ "shipping": { "name": "...", "phone": "...", "province": "...", "city": "...", "address": "..." } }`
 - **Behavior (POST)**: Transforms the current cart (identified securely by Token or Visitor ID) into a formal Order. Must clear the active cart upon success and return an `<ORDER_ID>`.
+- **Error Codes**: `CART_EMPTY`, `AUTH_REQUIRED`, `BAD_REQUEST`.
 - **Payment Limitation (Crucial)**: Automated agents currently cannot complete interactive consumer payments (like credit card 3D Secure, Apple Pay, WeChat Pay). Wait for the API to return a payment link or an order dashboard URL (e.g. `https://yourstore.com/orders/<ORDER_ID>`). The Agent must deliver this final URL to the human to complete checkout.
 
 ---
 
-## 4. Best Practices for "Agent-Friendliness"
+## 5. Best Practices for "Agent-Friendliness"
 
-1. **Provide Metadata**: Include VIP prices, promotion flags, or tags in the product list so the Agent can advocate for value and persuade the user.
-2. **Handle Typos Gracefully**: If an Agent requests a category that doesn't exist, return a list of `available_categories` within the error message.
-3. **Instruction Injection**:
-   - Instead of a blunt "403 Forbidden", use:
-     `{ "error": "Action Denied", "instruction": "This product is only available for VIP members. Suggest the user to upgrade." }`
+1. **Leverage the `instruction` field**: Use it to communicate contextual information like stock status, VIP restrictions, available alternatives, or shipping constraints. This avoids protocol bloat while keeping Agents fully informed.
+2. **Handle Typos Gracefully**: If an Agent requests a category that doesn't exist, return a list of `available_categories` within the `instruction`.
+3. **Always return `success: false`** with a valid `error` code for any failed operation. Never return a bare HTTP error without a JSON body.
 
 ---
-
-## 5. Live Examples
-- **Lafeitu API Demo (Node.js/Next.js)**: [Check the /api/v1 handlers](https://github.com/NowLoadY/lafeitu_official/tree/main/next-app/pages/api/v1).

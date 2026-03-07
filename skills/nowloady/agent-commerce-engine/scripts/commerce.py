@@ -14,26 +14,71 @@ except ImportError:
     }))
     sys.exit(1)
 
-# 添加 lib 路径到 sys.path
+# Add lib path to sys.path
 sys.path.append(str(Path(__file__).parent))
 from lib.commerce_client import BaseCommerceClient
 
-# 从环境变量获取配置，方便开发者直接使用命令：COMMERCE_URL=... python3 commerce.py
-BRAND_NAME = os.getenv("COMMERCE_BRAND_NAME", "Generic Commerce")
-BASE_URL = os.getenv("COMMERCE_URL", "https://api.yourstore.com/v1")
-BRAND_ID = os.getenv("COMMERCE_BRAND_ID", "generic_store")
+# DEPRECATED: Environment variable configuration.
+# Prefer using --store argument for multi-merchant support.
+# These env vars will be removed in a future major version.
+_ENV_URL = os.getenv("COMMERCE_URL")
+_ENV_BRAND_ID = os.getenv("COMMERCE_BRAND_ID")
+_ENV_BRAND_NAME = os.getenv("COMMERCE_BRAND_NAME", "Commerce Store")
 
-client = BaseCommerceClient(BASE_URL, BRAND_ID)
+def get_currency_symbol(code):
+    symbols = {"CNY": "¥", "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥"}
+    return symbols.get(code, f"{code} ")
 
-def format_output(data):
+def format_output(data, command=None):
     if isinstance(data, dict) and "error" in data:
-        # 增加配置提示建议
-        if "Connection error" in data["error"] and "yourstore.com" in BASE_URL:
-            data["hint"] = "It looks like you are using the default URL. Set COMMERCE_URL environment variable to your API endpoint."
-    print(json.dumps(data, indent=2, ensure_ascii=False))
+        if "Connection error" in str(data.get("error", "")) and _ENV_URL is None:
+            data["hint"] = "No store URL configured. Use --store <url> or set COMMERCE_URL env var."
+    
+    if command == "cart" and isinstance(data, dict) and data.get("success") and "items" in data:
+        if not data["items"]:
+            print("Your cart is empty.")
+        else:
+            curr = data.get("currency", "USD")
+            print(f"{'Item':<25} | {'Variant':<15} | {'Price':<10} | {'Qty':<4} | {'Subtotal':<10}")
+            for item in data["items"]:
+                name = item.get("product_name", item.get("product_slug", ""))
+                variant = item.get("variant", item.get("gram", ""))
+                price = item.get("price", 0)
+                qty = item.get("quantity", 0)
+                subtotal = price * qty
+                i_sym = get_currency_symbol(item.get("currency", curr))
+                print(f"{name[:25]:<25} | {str(variant):<15} | {i_sym}{price:<9.2f} | {qty:<4} | {i_sym}{subtotal:<9.2f}")
+            
+            tp = data.get("totalPrice", 0)
+            cur = get_currency_symbol(data.get("currency", curr))
+            print(f"Total: {cur}{tp:.2f}")
+
+    elif command == "list" and isinstance(data, dict) and data.get("success") and "products" in data:
+        for p in data["products"]:
+            name = p.get("name")
+            slug = p.get("slug")
+            print(f"• {name} ({slug})")
+            if p.get("variants"):
+                v_list = []
+                for v in p["variants"]:
+                    v_name = v.get("variant", v.get("gram"))
+                    v_price = v.get("price")
+                    v_curr = get_currency_symbol(v.get("currency", "USD"))
+                    v_list.append(f"{v_name}: {v_curr}{v_price}")
+                print(f"  Variants: {' | '.join(v_list)}")
+        print(f"Total: {data.get('total')} items found | Page {data.get('page')}/{data.get('totalPages')}")
+
+    else:
+        print(json.dumps(data, indent=2, ensure_ascii=False))
 
 def main():
-    parser = argparse.ArgumentParser(description=f"{BRAND_NAME} AI-Native Commerce CLI Tool")
+    parser = argparse.ArgumentParser(description="Agentic Commerce Engine — Universal CLI")
+
+    # Global argument: --store for multi-merchant targeting
+    parser.add_argument("--store", metavar="URL",
+                        help="Target store API URL (e.g., https://api.yourstore.com/v1). "
+                             "Overrides COMMERCE_URL env var.")
+
     subparsers = parser.add_subparsers(dest="command", help="Command type")
 
     # 1. Auth (login/logout/register/send-code)
@@ -58,8 +103,12 @@ def main():
     # 2. Products (search/list/get)
     search_p = subparsers.add_parser("search", help="Search for products")
     search_p.add_argument("query", help="Keywords")
+    search_p.add_argument("--page", type=int, default=1, help="Page number")
+    search_p.add_argument("--limit", type=int, default=50, help="Items per page")
 
-    subparsers.add_parser("list", help="List all products")
+    list_p = subparsers.add_parser("list", help="List all products")
+    list_p.add_argument("--page", type=int, default=1, help="Page number")
+    list_p.add_argument("--limit", type=int, default=50, help="Items per page")
 
     get_p = subparsers.add_parser("get", help="Get specific product details")
     get_p.add_argument("slug", help="Product unique identifier (slug)")
@@ -110,16 +159,56 @@ def main():
     subparsers.add_parser("company-info", help="Get formal company information")
     subparsers.add_parser("contact-info", help="Get official contact details")
 
+    # 5. Local management
+    subparsers.add_parser("stores", help="List all locally registered stores with saved credentials")
+
     args = parser.parse_args()
+
+    # --- Commands that don't require a store URL ---
+    if args.command == "stores":
+        creds_root = Path.home() / ".clawdbot" / "credentials" / "agent-commerce-engine"
+        if not creds_root.exists():
+            print(json.dumps({"success": True, "stores": [], "instruction": "No registered stores found."}))
+            sys.exit(0)
+        stores = []
+        for d in sorted(creds_root.iterdir()):
+            if d.is_dir():
+                has_creds = (d / "creds.json").exists()
+                has_visitor = (d / "visitor.json").exists()
+                store_info = {"domain": d.name, "authenticated": has_creds, "has_visitor": has_visitor}
+                if has_creds:
+                    try:
+                        with open(d / "creds.json") as f:
+                            creds = json.load(f)
+                            store_info["account"] = creds.get("account", "unknown")
+                    except:
+                        pass
+                stores.append(store_info)
+        print(json.dumps({"success": True, "stores": stores, "total": len(stores)}, indent=2, ensure_ascii=False))
+        sys.exit(0)
+
+    # --- Commands that require a store URL ---
+    # Resolve store URL: --store > COMMERCE_URL env var > error
+    store_url = args.store or _ENV_URL
+    if not store_url:
+        print(json.dumps({
+            "success": False,
+            "error": "BAD_REQUEST",
+            "instruction": "No store URL provided. Use --store <url> or set COMMERCE_URL env var."
+        }, indent=2))
+        sys.exit(1)
+
+    # Initialize client with resolved URL
+    # DEPRECATED: brand_id from env var, will be removed in future version
+    client = BaseCommerceClient(store_url, _ENV_BRAND_ID)
 
     # Execution logic
     if args.command == "login":
-        # 升级：不再直接保存密码，而是换取 Token
         result = client.get_api_token(args.account, args.password)
         if result.get("success"):
             format_output({
                 "success": True, 
-                "message": f"Login successful. API Token for {BRAND_ID} saved.",
+                "message": f"Login successful. Token for {client.store_id} saved.",
                 "storage": str(client.creds_file),
                 "permission": "0600 (Private)"
             })
@@ -140,13 +229,13 @@ def main():
 
     elif args.command == "logout":
         client.delete_credentials()
-        format_output({"success": True, "message": f"Logged out from {BRAND_ID}."})
+        format_output({"success": True, "message": f"Logged out from {client.store_id}."})
 
     elif args.command == "search":
-        format_output(client.search_products(args.query))
+        format_output(client.search_products(args.query, args.page, args.limit), "list")
 
     elif args.command == "list":
-        format_output(client.list_products())
+        format_output(client.list_products(args.page, args.limit), "list")
 
     elif args.command == "get":
         format_output(client.get_product(args.slug))
@@ -159,7 +248,7 @@ def main():
         format_output(client.update_profile(data))
 
     elif args.command == "cart":
-        format_output(client.get_cart())
+        format_output(client.get_cart(), "cart")
 
     elif args.command == "add-cart":
         format_output(client.modify_cart("add", args.slug, args.variant, args.quantity))
