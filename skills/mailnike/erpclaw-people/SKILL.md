@@ -1,6 +1,6 @@
 ---
 name: erpclaw-people
-version: 2.0.0
+version: 2.0.2
 description: >
   HR and Payroll for ERPClaw. Employee management, departments, leave,
   attendance, expense claims, salary structures, US payroll processing,
@@ -113,7 +113,7 @@ Domains: `erpclaw-hr`, `erpclaw-payroll`
 | `mark-attendance` | `--employee-id`, `--date`, `--status` | |
 | `bulk-mark-attendance` | `--date`, `--entries` (JSON) | |
 | `list-attendance` | | `--employee-id`, `--from-date`, `--to-date` |
-| `add-holiday-list` | `--name`, `--year`, `--holidays` (JSON) | `--company-id` |
+| `add-holiday-list` | `--name`, `--from-date`, `--to-date`, `--company-id` | `--holidays` (JSON) |
 
 Attendance status values: `present`, `absent`, `half_day`, `on_leave`, `wfh`
 
@@ -172,8 +172,8 @@ Lifecycle event types: `hiring`, `promotion`, `transfer`, `separation`, `confirm
 
 | Action | Required Flags | Optional Flags |
 |--------|---------------|----------------|
-| `add-garnishment` | `--employee-id`, `--garnishment-type`, `--amount` | `--case-number`, `--effective-from`, `--effective-to` |
-| `update-garnishment` | `--garnishment-id` | `--amount`, `--status` |
+| `add-garnishment` | `--employee-id`, `--garnishment-type`, `--amount-or-percentage`, `--order-number`, `--creditor-name` | `--start-date`, `--end-date` |
+| `update-garnishment` | `--garnishment-id` | `--amount-or-percentage`, `--status` |
 | `list-garnishments` | | `--employee-id`, `--status` |
 | `get-garnishment` | `--garnishment-id` | |
 
