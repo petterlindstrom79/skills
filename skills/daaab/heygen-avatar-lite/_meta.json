@@ -3,11 +3,16 @@
   "slug": "heygen-avatar-lite",
   "displayName": "HeyGen AI Avatar Video (Lite)",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1772296392341,
-    "commit": "https://github.com/openclaw/skills/commit/54d44df380e9c09a0deb9274015db1b5f3d62812"
+    "version": "1.1.1",
+    "publishedAt": 1772881829664,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1772296392341,
+      "commit": "https://github.com/openclaw/skills/commit/54d44df380e9c09a0deb9274015db1b5f3d62812"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770104689038,

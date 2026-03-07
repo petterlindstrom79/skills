@@ -20,7 +20,7 @@ Create professional AI-generated videos with your own digital human avatar!
 ## 📋 Prerequisites
 
 1. **HeyGen Account** (Creator plan or above)
-   - Sign up: https://heygen.com
+   - [**👉 Sign up for HeyGen**](https://www.heygen.com/?sid=rewardful&via=clawhub) — new users get 1 free video!
    - Get API key from Settings → API
 
 2. **Custom Avatar** (optional)
@@ -107,6 +107,8 @@ curl -X GET "https://api.heygen.com/v1/video_status.get?video_id=$VIDEO_ID" \
 | Square | 1080x1080 | Instagram |
 
 ## 💰 Cost Estimate
+
+> 💡 **Tip**: [Sign up through our link](https://www.heygen.com/?sid=rewardful&via=clawhub) to get started with a free video credit!
 
 | Plan | Price | Credits |
 |------|-------|---------|
