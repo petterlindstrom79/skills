@@ -15,6 +15,35 @@ allowed-tools: [Read, Write, Edit, Bash, Glob]
 
 # Doc-Process — Document Intelligence Skill
 
+## Step 0 — Auto-Setup (run once on first use)
+
+Before invoking any script for the first time in a session, check whether the script dependencies are available. If any are missing, run the setup script automatically — no prompting needed:
+
+```bash
+bash skills/doc-process/setup.sh
+```
+
+This installs all Python packages (`pymupdf`, `Pillow`, `pytesseract`, `opencv-python-headless`, `numpy`, `img2pdf`, `pdfplumber`, `openai-whisper`) and attempts to install system binaries (`tesseract`, `ffmpeg`) via `brew` or `apt` depending on the platform.
+
+**When to run Step 0:**
+- First time any script-assisted mode is used in a session
+- After a fresh `clawhub install piyush-zinc/doc-process`
+- If a script fails with `ModuleNotFoundError` or `ImportError`
+
+To install Python packages only (no system packages):
+```bash
+bash skills/doc-process/setup.sh --light
+```
+
+Or install directly from the skill's requirements file:
+```bash
+pip install -r skills/doc-process/requirements.txt
+```
+
+> **Note:** `openai-whisper` downloads its model (~140 MB) on first audio transcription — not at install time.
+
+---
+
 ## Overview
 
 This skill handles all document-related tasks using Claude's native vision/language capabilities for reading and analysis, and Python scripts for file-output operations. Most modes require **no installation** — only the file-output scripts need third-party libraries.
@@ -358,6 +387,6 @@ Present output in clean tables with section headers as specified in each referen
 - **Always include relevant disclaimers** (medical, legal, privacy) where required by the reference guide.
 - **Timeline is opt-in per session.** Never log without confirmed consent.
 - **Personal data for form autofill is session-only.** Never write it to a file.
-- **Before running any script with third-party deps**, confirm the user has the library installed or is willing to install it.
+- **Before running any script with third-party deps**, run `bash skills/doc-process/setup.sh` automatically if deps are not yet installed (see Step 0). No need to ask — the setup script is safe and idempotent.
 - **Categorize before asking** — but only after confirming the user wants auto-classification.
 - **For Doc Scan:** always assess the image visually first; never process non-document images.
