@@ -18,6 +18,28 @@ metadata:
 
 # Keychain Bridge
 
+## Trigger Phrases
+
+- "migrate secrets to keychain" / "move secrets"
+- "check keychain health" / "keychain status"
+- "audit secrets" / "check for leaks"
+- "read secret" / "get API key"
+- "store secret" / "write to keychain"
+- "keychain not working" / "security find-generic-password hangs"
+
+## Example Usage
+
+```
+User: "Migrate my secrets to the keychain"
+Action: python3 SKILL_DIR/scripts/migrate_secrets.py --dir ~/.openclaw/secrets/ --account moltbot --dry-run
+
+User: "Check if the keychain bridge is healthy"
+Action: Run keychain health check (test write/read/delete cycle)
+
+User: "Audit for plaintext secret leaks"
+Action: python3 SKILL_DIR/scripts/audit_secrets.py --dir ~/.openclaw/secrets/ --account moltbot
+```
+
 Manage secrets via macOS Keychain instead of plaintext files. Eliminates plaintext credential storage while maintaining compatibility with bash-based tools through a file-bridge architecture.
 
 ## Prerequisites
@@ -148,9 +170,43 @@ Reports:
 ### Python keyring returns None or raises errSecInteractionNotAllowed (-25308)
 This happens when running from an SSH session. The keychain requires a GUI session (SecurityAgent) context.
 
-**Fix**: Run from a LaunchAgent (which has GUI session context), or unlock the keychain first:
-```bash
-security unlock-keychain -p "PASSWORD" ~/Library/Keychains/login.keychain-db
+**Fix (recommended)**: Use the Group B file-bridge pattern. Write secrets from a GUI session (LaunchAgent or VNC Terminal), then read from `chmod 600` files in SSH.
+
+**Fix (SSH write — ctypes unlock)**: The `security unlock-keychain -p` CLI command is also broken on Tahoe (returns "incorrect passphrase" with correct password). Use the Security framework C API via ctypes instead. The unlock + set + verify **must happen in a single Python process** — the unlock does not persist across invocations:
+
+```python
+python3 << 'PYEOF'
+import ctypes, ctypes.util, keyring
+
+# Unlock via Security framework (bypasses broken security CLI)
+Security = ctypes.cdll.LoadLibrary(ctypes.util.find_library("Security"))
+keychain = ctypes.c_void_p()
+path = b"/Users/USERNAME/Library/Keychains/login.keychain-db"
+Security.SecKeychainOpen(path, ctypes.byref(keychain))
+pw = b"YOUR_LOGIN_PASSWORD"
+Security.SecKeychainUnlock(keychain, ctypes.c_uint32(len(pw)), pw, ctypes.c_bool(True))
+
+# Now keyring works — but ONLY within this same process
+keyring.set_password("SERVICE", "ACCOUNT", "VALUE")
+print("OK" if keyring.get_password("SERVICE", "ACCOUNT") else "FAIL")
+PYEOF
+```
+
+**Caveats of ctypes unlock:**
+- Unlock is **process-scoped** — a second `python3` invocation starts locked again
+- Only `/usr/bin/python3` (Apple system Python) can write after ctypes unlock; Homebrew Pythons (3.12, 3.14) still get -25308 even in the same process
+- For multi-Python ACL coverage, write from `/usr/bin/python3` first, then inject from other Pythons in a VNC Terminal session (GUI context)
+- If you need SSH-only access to the secret after writing, create a Group B bridge file in the same process:
+
+```python
+# After keyring.set_password() succeeds in the same process:
+import os
+val = keyring.get_password("SERVICE", "ACCOUNT")
+os.makedirs(os.path.expanduser("~/.my-app/secrets"), exist_ok=True)
+path = os.path.expanduser("~/.my-app/secrets/SERVICE")
+with open(path, "w") as f:
+    f.write(val)
+os.chmod(path, 0o600)
 ```
 
 ### Python keyring hangs when called from bash LaunchAgent
@@ -226,11 +282,12 @@ pip3 --version
 
 ## Known Issues (macOS Tahoe 26.x)
 
-1. **`security` CLI broken**: `find-generic-password -w` hangs or exits 36. Use Python `keyring` instead.
+1. **`security` CLI broken across the board**: `find-generic-password -w` hangs or exits 36. `unlock-keychain -p` returns "incorrect passphrase" with correct password. `show-keychain-info` exits 36. The entire `security` CLI is unreliable on Tahoe — use Python `keyring` (Group A) or ctypes Security framework for all keychain operations.
 2. **Keychain ACL per-binary**: Must inject from every Python version that will read the item.
 3. **Bash subprocess loses SecurityAgent**: `bash LaunchAgent → python3 subprocess` hangs. Use Group B file bridge.
-4. **SSH sessions lack GUI context**: Keychain reads fail with -25308. Run from LaunchAgent or unlock first.
+4. **SSH sessions lack GUI context**: Keychain reads/writes fail with -25308. Use ctypes `SecKeychainUnlock` in the same Python process (see Diagnose Issues), or use Group B file bridge. The ctypes unlock is process-scoped — it does not persist across separate command invocations.
 5. **`keyring` must be installed per-Python**: Each binary's site-packages is independent.
+6. **Homebrew Python ignores ctypes unlock**: After `SecKeychainUnlock` via ctypes, `/usr/bin/python3` (Apple system Python 3.9) can read/write via `keyring`, but Homebrew Pythons (3.12, 3.14) still get -25308. Root cause unknown — may be entitlement or codesigning difference. Workaround: write from `/usr/bin/python3`, then inject from Homebrew Pythons in a GUI session (VNC Terminal or LaunchAgent).
 
 These issues are specific to macOS Tahoe 26.x (macOS 26). Earlier versions (Sonoma 14, Sequoia 15) may not exhibit all of them, but the Group A/B architecture is safe on all versions.
 
