@@ -65,9 +65,11 @@ mcporter call dingtalk-ai-table get_root_node_of_my_document --output json
 成功时会返回包含 `rootDentryUuid` 的 JSON，例如：
 ```json
 {
-  "rootDentryUuid": "dtcn_xxxxxxxx"
+  "rootDentryUuid": "dtcn_example_root_id_12345678"
 }
 ```
+
+> `rootDentryUuid` / `dentryUuid` 以 API 实际返回为准。它可能不是 UUID v4，不要自行套用 UUID v4 格式校验。
 
 ### 创建第一个表格
 
@@ -83,6 +85,19 @@ mcporter call dingtalk-ai-table get_root_node_of_my_document --output json
 4. 检查网络连接，确保能访问钉钉服务
 
 ### 某些表格操作失败
+
+先检查参数命名。
+
+如果你使用的是 `mcporter call ... key:value` 这种调用方式，参数名必须使用 **camelCase**，例如：
+- `dentryUuid`
+- `sheetIdOrName`
+- `recordIds`
+
+不要写成 kebab-case，例如 `dentry-uuid`、`sheet-id-or-name`、`record-ids`。这类写法可能导致接口返回：
+- `errorCode: 5000001`
+- `errorMsg: fail to get document info`
+
+更稳妥的方式是统一使用 `--args` 传 JSON。
 
 我们仍在不断增强钉钉 AI 表格的 MCP 能力，每天都会有更新，很可能今天无法实现的操作，明天就能让你的 OpenClaw 实现。
 
