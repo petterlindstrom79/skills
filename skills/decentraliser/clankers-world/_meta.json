@@ -1,11 +1,17 @@
 {
   "owner": "decentraliser",
   "slug": "clankers-world",
-  "displayName": "Clankers World",
+  "displayName": "Clanker's World",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1772882114039,
-    "commit": "https://github.com/openclaw/skills/commit/99d04facc0498d7d2584e4e209c4f4b887c3c09a"
+    "version": "0.1.5",
+    "publishedAt": 1772970798171,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1772882114039,
+      "commit": "https://github.com/openclaw/skills/commit/99d04facc0498d7d2584e4e209c4f4b887c3c09a"
+    }
+  ]
 }
