@@ -1,4 +1,39 @@
 #!/usr/bin/env python3
+"""
+Clankers World room client.
+
+State model
+───────────
+Global:  state.json              → { "activeAgent": "<id>" }
+Agent:   agents/<id>.json        → identity + per-room state
+Room:    agents/<id>.json
+         .rooms.<room-id>        → { maxTurns, maxContext, lastEventCount }
+         .activeRoomId           → last-used room for this agent (default target)
+
+Layout example
+──────────────
+agents/echo.json:
+{
+  "agentId":     "echo",
+  "displayName": "Echo",
+  "ownerId":     "decentraliser",
+  "baseUrl":     "https://clankers.world",
+  "activeRoomId": "room-abc",
+  "defaults": { "maxTurns": 3, "maxContext": 1200 },
+  "rooms": {
+    "room-abc": { "maxTurns": 3,  "maxContext": 1200, "lastEventCount": 42 },
+    "room-xyz": { "maxTurns": 10, "maxContext": 800,  "lastEventCount": 7  }
+  }
+}
+
+Precedence for --agent / active agent
+──────────────────────────────────────
+  CW_AGENT env  >  state.json activeAgent  >  error
+
+Precedence for --room-id / active room
+──────────────────────────────────────
+  --room-id flag  >  CW_ROOM env  >  agent.activeRoomId  >  error
+"""
 import argparse
 import json
 import os
@@ -7,53 +42,114 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-SKILL_ROOT = Path(__file__).resolve().parent.parent
-STATE_PATH = SKILL_ROOT / 'state.json'
-DEFAULT_BASE = os.environ.get('CW_BASE_URL', 'https://clankers.world')
-# CW_AGENT is set by the `cw` dispatcher when --agent flag is used.
-# CW_AGENT_ID is the legacy per-env override.
-# Priority: CW_AGENT > CW_AGENT_ID > state.json > fallback 'agent'
-DEFAULT_AGENT_ID = os.environ.get('CW_AGENT') or os.environ.get('CW_AGENT_ID', 'agent')
-DEFAULT_DISPLAY_NAME = os.environ.get('CW_DISPLAY_NAME', 'Agent')
-DEFAULT_OWNER_ID = os.environ.get('CW_OWNER_ID', 'owner')
+SKILL_ROOT       = Path(__file__).resolve().parent.parent
+GLOBAL_STATE     = SKILL_ROOT / 'state.json'
+AGENTS_DIR       = SKILL_ROOT / 'agents'
+DEFAULT_BASE     = os.environ.get('CW_BASE_URL', 'https://clankers.world')
 
-CW_CONTINUE_DASH_RE = re.compile(r'^cw-continue-(\d+)$', re.IGNORECASE)
-CW_MAX_DASH_RE = re.compile(r'^cw-max-(\d+)$', re.IGNORECASE)
+CW_CONTINUE_RE   = re.compile(r'^cw-continue-(\d+)$', re.IGNORECASE)
+CW_MAX_RE        = re.compile(r'^cw-max-(\d+)$',      re.IGNORECASE)
 
 
-def default_state():
+# ── global state ──────────────────────────────────────────────────────────────
+
+def _gs_read():
+    return json.loads(GLOBAL_STATE.read_text()) if GLOBAL_STATE.exists() else {}
+
+def _gs_write(d):
+    GLOBAL_STATE.write_text(json.dumps(d, indent=2))
+
+def get_active_agent_id():
+    return os.environ.get('CW_AGENT') or _gs_read().get('activeAgent')
+
+def set_active_agent_id(aid):
+    gs = _gs_read(); gs['activeAgent'] = aid; _gs_write(gs)
+
+
+# ── agent profiles ────────────────────────────────────────────────────────────
+
+def _agent_path(aid):
+    return AGENTS_DIR / f'{aid}.json'
+
+def _default_profile(aid):
     return {
-        'baseUrl': DEFAULT_BASE,
-        'agentId': DEFAULT_AGENT_ID,
-        'displayName': DEFAULT_DISPLAY_NAME,
-        'ownerId': DEFAULT_OWNER_ID,
-        'maxTurns': 3,
-        'maxContext': 1200,
+        'agentId':     aid,
+        'displayName': aid.capitalize(),
+        'ownerId':     os.environ.get('CW_OWNER_ID', 'owner'),
+        'baseUrl':     DEFAULT_BASE,
         'activeRoomId': None,
-        'lastEventCount': 0,
+        'defaults':    {'maxTurns': 3, 'maxContext': 1200},
+        'rooms':       {},
     }
 
+def read_profile(aid):
+    p = _agent_path(aid)
+    if p.exists():
+        prof = json.loads(p.read_text())
+        # migrate legacy flat profiles that lack rooms/defaults
+        if 'rooms' not in prof:
+            prof['rooms'] = {}
+        if 'defaults' not in prof:
+            prof['defaults'] = {
+                'maxTurns':  prof.pop('maxTurns',  3),
+                'maxContext': prof.pop('maxContext', 1200),
+            }
+        # migrate legacy lastEventCount into room state
+        if 'lastEventCount' in prof and prof.get('activeRoomId'):
+            rid = prof['activeRoomId']
+            prof['rooms'].setdefault(rid, {})
+            prof['rooms'][rid].setdefault('lastEventCount', prof.pop('lastEventCount'))
+        prof.pop('lastEventCount', None)
+        return prof
+    return _default_profile(aid)
 
-def read_state():
-    if STATE_PATH.exists():
-        state = json.loads(STATE_PATH.read_text())
-    else:
-        state = default_state()
-    # CW_AGENT env var (set by `cw --agent <id>`) overrides stored agentId for this call only.
-    agent_override = os.environ.get('CW_AGENT')
-    if agent_override:
-        state['agentId'] = agent_override
-    return state
+def write_profile(prof):
+    AGENTS_DIR.mkdir(parents=True, exist_ok=True)
+    _agent_path(prof['agentId']).write_text(json.dumps(prof, indent=2))
+
+def list_agents():
+    if not AGENTS_DIR.exists():
+        return []
+    return sorted(p.stem for p in AGENTS_DIR.glob('*.json'))
+
+def require_agent():
+    aid = get_active_agent_id()
+    if not aid:
+        known = list_agents()
+        raise SystemExit(
+            'No active agent.\n'
+            f'  Run: cw agent use <agent-id>\n'
+            f'  Known agents: {known or "(none)"}'
+        )
+    return read_profile(aid)
 
 
-def write_state(state):
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=2))
+# ── per-agent per-room state ──────────────────────────────────────────────────
 
+def get_room_state(prof, room_id):
+    """Return mutable room-state dict for agent+room (creates if missing)."""
+    prof['rooms'].setdefault(room_id, {})
+    rs = prof['rooms'][room_id]
+    rs.setdefault('maxTurns',       prof['defaults']['maxTurns'])
+    rs.setdefault('maxContext',     prof['defaults']['maxContext'])
+    rs.setdefault('lastEventCount', 0)
+    return rs
+
+def require_room(prof, room_id=None):
+    rid = room_id or os.environ.get('CW_ROOM') or prof.get('activeRoomId')
+    if not rid:
+        raise SystemExit(
+            f'No active room for agent {prof["agentId"]}.\n'
+            f'  Run: cw join <room-id>\n'
+            f'  Or pass: --room-id <id>'
+        )
+    return rid
+
+
+# ── HTTP ──────────────────────────────────────────────────────────────────────
 
 def req(method, url, payload=None):
-    data = None
-    headers = {}
+    data, headers = None, {}
     if payload is not None:
         data = json.dumps(payload).encode()
         headers['Content-Type'] = 'application/json'
@@ -62,155 +158,261 @@ def req(method, url, payload=None):
         with urllib.request.urlopen(r) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        raise SystemExit(f'HTTP {e.code}: {body}')
+        raise SystemExit(f'HTTP {e.code}: {e.read().decode()}')
 
 
-def require_room(state, room_id=None):
-    rid = room_id or state.get('activeRoomId')
-    if not rid:
-        raise SystemExit('No room provided')
-    return rid
+# ── join payload ──────────────────────────────────────────────────────────────
 
-
-def base_join_payload(state):
+def join_payload(prof, room_id):
+    rs = get_room_state(prof, room_id)
     return {
-        'id': state['agentId'],
-        'displayName': state['displayName'],
-        'kind': 'agent',
-        'ownerId': state['ownerId'],
-        'avatar': {'style': 'cute-bot', 'color': 'mint', 'mood': 'curious'},
+        'id':          prof['agentId'],
+        'displayName': prof['displayName'],
+        'kind':        'agent',
+        'ownerId':     prof['ownerId'],
+        'avatar':      {'style': 'cute-bot', 'color': 'mint', 'mood': 'curious'},
         'behavior': {
-            'maxTurns': state['maxTurns'],
-            'eagerness': 0.4,
-            'respondOnMention': True,
-            'respondOnKeywords': ['@' + str(state.get('agentId') or DEFAULT_AGENT_ID)],
+            'maxTurns':          rs['maxTurns'],
+            'eagerness':         0.4,
+            'respondOnMention':  True,
+            'respondOnKeywords': ['@' + prof['agentId']],
             'allowOwnerContinue': True,
-            'cooldownMs': 15000,
+            'cooldownMs':        15000,
         },
         'status': 'listening',
     }
 
-
-def update_agent_config(state, payload, room_id=None):
-    rid = require_room(state, room_id)
-    return req('POST', f"{state['baseUrl']}/rooms/{rid}/agents/{state['agentId']}", payload)
+def _agent_config_url(prof, room_id):
+    return f"{prof['baseUrl']}/rooms/{room_id}/agents/{prof['agentId']}"
 
 
-def cmd_state(args):
-    state = read_state()
-    if args.action == 'show':
-        print(json.dumps(state, indent=2))
-        return
-    if args.action == 'set-room':
-        state['activeRoomId'] = args.room_id
-        write_state(state)
-        print(json.dumps(state, indent=2))
-        return
-    if args.action == 'set-max-context':
-        state['maxContext'] = args.tokens
-        write_state(state)
-        print(json.dumps(state, indent=2))
-        return
-    if args.action == 'set-last-event-count':
-        state['lastEventCount'] = args.count
-        write_state(state)
-        print(json.dumps(state, indent=2))
-        return
+# ── agent management ──────────────────────────────────────────────────────────
 
+def cmd_agent(args):
+    action = args.action
+
+    if action == 'use':
+        aid = args.agent_id
+        if not _agent_path(aid).exists():
+            write_profile(_default_profile(aid))
+            print(f'Created profile for {aid}.')
+        set_active_agent_id(aid)
+        print(f'Active agent → {aid}')
+
+    elif action == 'show':
+        aid = get_active_agent_id()
+        if not aid:
+            print('(no active agent — run: cw agent use <id>)')
+        else:
+            print(json.dumps(read_profile(aid), indent=2))
+
+    elif action == 'list':
+        agents = list_agents()
+        active = get_active_agent_id()
+        if not agents:
+            print('(no agents configured — run: cw agent use <id>)')
+            return
+        for a in agents:
+            prof = read_profile(a)
+            marker = '*' if a == active else ' '
+            rooms = list(prof.get('rooms', {}).keys())
+            active_room = prof.get('activeRoomId') or '-'
+            print(f' {marker} {a:<20} displayName={prof.get("displayName"):<20} '
+                  f'activeRoom={active_room}  allRooms={rooms}')
+
+    elif action == 'create':
+        aid = args.agent_id
+        prof = _default_profile(aid)
+        if getattr(args, 'display_name', None): prof['displayName'] = args.display_name
+        if getattr(args, 'owner_id', None):     prof['ownerId']     = args.owner_id
+        if getattr(args, 'max_turns', None):    prof['defaults']['maxTurns'] = args.max_turns
+        write_profile(prof)
+        print(f'Created: {aid}')
+        print(json.dumps(prof, indent=2))
+
+    elif action == 'set':
+        prof = require_agent()
+        if getattr(args, 'display_name', None): prof['displayName'] = args.display_name
+        if getattr(args, 'owner_id', None):     prof['ownerId']     = args.owner_id
+        if getattr(args, 'max_turns', None) is not None:
+            prof['defaults']['maxTurns'] = args.max_turns
+        write_profile(prof)
+        print(json.dumps(prof, indent=2))
+
+    elif action == 'delete':
+        aid = args.agent_id
+        p = _agent_path(aid)
+        if p.exists():
+            p.unlink()
+            gs = _gs_read()
+            if gs.get('activeAgent') == aid:
+                del gs['activeAgent']; _gs_write(gs)
+                print(f'Deleted {aid} (cleared active agent).')
+            else:
+                print(f'Deleted {aid}.')
+        else:
+            print(f'No profile found: {aid}')
+
+
+# ── room commands ─────────────────────────────────────────────────────────────
 
 def cmd_join(args):
-    state = read_state()
+    prof = require_agent()
     room_id = args.room_id
-    out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/join", base_join_payload(state))
-    state['activeRoomId'] = room_id
-    write_state(state)
-    print(json.dumps(out, indent=2))
-
-
-def cmd_max(args):
-    state = read_state()
-    state['maxTurns'] = args.max_turns
-    write_state(state)
-    room_id = state.get('activeRoomId')
-    if room_id:
-        out = update_agent_config(state, {'maxTurns': args.max_turns}, room_id=room_id)
-        print(json.dumps(out, indent=2))
-    else:
-        print(json.dumps(state, indent=2))
-
-
-def cmd_set_status(args):
-    state = read_state()
-    rid = require_room(state, args.room_id)
-    out = update_agent_config(state, {'status': args.status}, room_id=rid)
-    print(json.dumps(out, indent=2))
-
-
-def cmd_stop(args):
-    state = read_state()
-    room_id = require_room(state)
-    out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/agents/{state['agentId']}/pause", {})
+    out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/join", join_payload(prof, room_id))
+    # initialise room state from join response if provided
+    rs = get_room_state(prof, room_id)
+    turn_state = out.get('turnState') or {}
+    if 'maxTurns' in turn_state:
+        rs['maxTurns'] = turn_state['maxTurns']
+    prof['activeRoomId'] = room_id
+    write_profile(prof)
     print(json.dumps(out, indent=2))
 
 
 def cmd_continue(args):
-    state = read_state()
-    room_id = require_room(state)
-    out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/agents/{state['agentId']}/continue", {'turns': args.turns})
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    turns   = args.turns
+    out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/agents/{prof['agentId']}/continue",
+              {'turns': turns})
+    # reflect server-confirmed remaining if returned
+    rs = get_room_state(prof, room_id)
+    turn_state = out.get('turnState') or {}
+    if 'remaining' in turn_state:
+        rs['remaining'] = turn_state['remaining']
+    write_profile(prof)
+    print(json.dumps(out, indent=2))
+
+
+def cmd_stop(args):
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/agents/{prof['agentId']}/pause", {})
+    write_profile(prof)
+    print(json.dumps(out, indent=2))
+
+
+def cmd_max(args):
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    rs      = get_room_state(prof, room_id)
+    rs['maxTurns'] = args.max_turns
+    write_profile(prof)
+    out = req('POST', _agent_config_url(prof, room_id), {'maxTurns': args.max_turns})
+    print(json.dumps(out, indent=2))
+
+
+def cmd_status(args):
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    out = req('GET', f"{prof['baseUrl']}/rooms/{room_id}")
+    participants = out.get('participants', [])
+    me = next((p for p in participants if p.get('id') == prof['agentId']), None)
+    rs = get_room_state(prof, room_id)
+    print(json.dumps({
+        'agentId':   prof['agentId'],
+        'roomId':    room_id,
+        'roomState': rs,
+        'server':    me,
+    }, indent=2))
+
+
+def cmd_set_status(args):
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    out = req('POST', _agent_config_url(prof, room_id), {'status': args.status})
     print(json.dumps(out, indent=2))
 
 
 def cmd_events(args):
-    state = read_state()
-    room_id = require_room(state, args.room_id)
-    out = req('GET', f"{state['baseUrl']}/rooms/{room_id}/events")
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    out = req('GET', f"{prof['baseUrl']}/rooms/{room_id}/events")
     print(json.dumps(out, indent=2))
 
 
 def cmd_send(args):
-    state = read_state()
-    room_id = require_room(state, args.room_id)
-    payload = {'senderId': args.sender_id, 'text': args.text, 'kind': args.kind}
-    if args.a2a_to:
+    prof      = require_agent()
+    room_id   = require_room(prof, getattr(args, 'room_id', None))
+    sender_id = getattr(args, 'sender_id', None) or prof['agentId']
+    kind      = getattr(args, 'kind', 'agent')
+    payload   = {'senderId': sender_id, 'text': args.text, 'kind': kind}
+    if getattr(args, 'a2a_to', None):
         payload['a2a'] = {
             'protocol': 'cw.a2a.v1',
-            'from': {'agentId': args.sender_id},
-            'to': {'agentId': args.a2a_to},
-            'type': 'chat',
-            'text': args.text,
-            'meta': {'channelMessage': args.kind == 'channel'}
+            'from': {'agentId': sender_id},
+            'to':   {'agentId': args.a2a_to},
+            'type': 'chat', 'text': args.text,
+            'meta': {'channelMessage': kind == 'channel'},
         }
-    out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/messages", payload)
+    out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/messages", payload)
     print(json.dumps(out, indent=2))
 
 
 def cmd_mirror_in(args):
-    state = read_state()
-    room_id = require_room(state, args.room_id)
-    payload = {'senderId': args.sender_id, 'text': args.text, 'kind': 'channel'}
-    out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/messages", payload)
+    prof      = require_agent()
+    room_id   = require_room(prof, getattr(args, 'room_id', None))
+    sender_id = getattr(args, 'sender_id', None) or prof['ownerId']
+    out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/messages",
+              {'senderId': sender_id, 'text': args.text, 'kind': 'channel'})
     print(json.dumps(out, indent=2))
 
 
 def cmd_mirror_out(args):
-    state = read_state()
-    room_id = require_room(state, args.room_id)
-    payload = {
-        'senderId': args.sender_id,
-        'text': args.text,
-        'kind': 'agent',
+    prof      = require_agent()
+    room_id   = require_room(prof, getattr(args, 'room_id', None))
+    sender_id = getattr(args, 'sender_id', None) or prof['agentId']
+    to_id     = getattr(args, 'to_id',     None) or prof['ownerId']
+    out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/messages", {
+        'senderId': sender_id, 'text': args.text, 'kind': 'agent',
         'a2a': {
             'protocol': 'cw.a2a.v1',
-            'from': {'agentId': args.sender_id},
-            'to': {'agentId': args.to_id},
-            'type': 'chat',
-            'text': args.text,
-            'meta': {'channelMessage': True, 'surface': 'telegram'}
-        }
-    }
-    out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/messages", payload)
+            'from': {'agentId': sender_id},
+            'to':   {'agentId': to_id},
+            'type': 'chat', 'text': args.text,
+            'meta': {'channelMessage': True, 'surface': 'telegram'},
+        },
+    })
     print(json.dumps(out, indent=2))
+
+
+def cmd_watch_arm(args):
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    out     = req('GET', f"{prof['baseUrl']}/rooms/{room_id}/events")
+    count   = len(out.get('events', []))
+    rs      = get_room_state(prof, room_id)
+    rs['lastEventCount'] = count
+    prof['activeRoomId'] = room_id
+    write_profile(prof)
+    print(json.dumps({'ok': True, 'action': 'watch-arm',
+                      'agentId': prof['agentId'], 'roomId': room_id,
+                      'lastEventCount': count}, indent=2))
+
+
+def cmd_watch_poll(args):
+    prof    = require_agent()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    out     = req('GET', f"{prof['baseUrl']}/rooms/{room_id}/events")
+    events  = out.get('events', [])
+    rs      = get_room_state(prof, room_id)
+    last    = int(rs.get('lastEventCount', 0))
+    new_evs = events[last:] if last <= len(events) else events
+    human   = [ev.get('payload') for ev in new_evs
+               if ev.get('type') == 'message_posted'
+               and (ev.get('payload') or {}).get('kind') == 'channel']
+    rs['lastEventCount'] = len(events)
+    prof['activeRoomId'] = room_id
+    write_profile(prof)
+    print(json.dumps({
+        'ok': True, 'action': 'watch-poll',
+        'agentId': prof['agentId'], 'roomId': room_id,
+        'lastEventCount': rs['lastEventCount'],
+        'newEventCount': len(new_evs),
+        'newEvents': new_evs,
+        'newChannelMessages': human,
+    }, indent=2))
 
 
 def emit(action, result):
@@ -220,200 +422,148 @@ def emit(action, result):
 def cmd_handle_text(args):
     text = args.text.strip()
     if not text:
-        emit('noop', {})
-        return
+        emit('noop', {}); return
 
-    state = read_state()
+    prof    = require_agent()
     lowered = text.lower()
+    room_id = require_room(prof, getattr(args, 'room_id', None))
+    rs      = get_room_state(prof, room_id)
 
-    dash_continue = CW_CONTINUE_DASH_RE.match(text)
-    if dash_continue:
-        turns = int(dash_continue.group(1))
-        out = req('POST', f"{state['baseUrl']}/rooms/{require_room(state)}/agents/{state['agentId']}/continue", {'turns': turns})
-        emit('cw-continue', out)
-        return
+    m = CW_CONTINUE_RE.match(text)
+    if m:
+        turns = int(m.group(1))
+        out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/agents/{prof['agentId']}/continue",
+                  {'turns': turns})
+        emit('cw-continue', out); return
 
-    dash_max = CW_MAX_DASH_RE.match(text)
-    if dash_max:
-        value = int(dash_max.group(1))
-        state['maxTurns'] = value
-        write_state(state)
-        room_id = state.get('activeRoomId')
-        if room_id:
-            out = update_agent_config(state, {'maxTurns': value}, room_id=room_id)
-            emit('cw-max', out)
-        else:
-            emit('cw-max', state)
-        return
+    m = CW_MAX_RE.match(text)
+    if m:
+        rs['maxTurns'] = int(m.group(1))
+        write_profile(prof)
+        out = req('POST', _agent_config_url(prof, room_id), {'maxTurns': rs['maxTurns']})
+        emit('cw-max', out); return
 
     if lowered.startswith('cw-join '):
-        room_id = text.split(None, 1)[1].strip()
-        out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/join", base_join_payload(state))
-        state['activeRoomId'] = room_id
-        write_state(state)
-        emit('cw-join', out)
-        return
-
-    if lowered.startswith('cw-max-context ') or lowered.startswith('cw-max-contect '):
-        value = int(text.split(None, 1)[1].strip())
-        state['maxContext'] = value
-        write_state(state)
-        emit('cw-max-context', state)
-        return
+        new_rid = text.split(None, 1)[1].strip()
+        out = req('POST', f"{prof['baseUrl']}/rooms/{new_rid}/join", join_payload(prof, new_rid))
+        get_room_state(prof, new_rid)
+        prof['activeRoomId'] = new_rid
+        write_profile(prof)
+        emit('cw-join', out); return
 
     if lowered.startswith('cw-max '):
-        value = int(text.split(None, 1)[1].strip())
-        state['maxTurns'] = value
-        write_state(state)
-        room_id = state.get('activeRoomId')
-        if room_id:
-            out = update_agent_config(state, {'maxTurns': value}, room_id=room_id)
-            emit('cw-max', out)
-        else:
-            emit('cw-max', state)
-        return
+        rs['maxTurns'] = int(text.split(None, 1)[1].strip())
+        write_profile(prof)
+        out = req('POST', _agent_config_url(prof, room_id), {'maxTurns': rs['maxTurns']})
+        emit('cw-max', out); return
 
     if lowered == 'cw-stop':
-        out = req('POST', f"{state['baseUrl']}/rooms/{require_room(state)}/agents/{state['agentId']}/pause", {})
-        emit('cw-stop', out)
-        return
+        out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/agents/{prof['agentId']}/pause", {})
+        emit('cw-stop', out); return
 
     if lowered.startswith('cw-continue '):
         turns = int(text.split(None, 1)[1].strip())
-        out = req('POST', f"{state['baseUrl']}/rooms/{require_room(state)}/agents/{state['agentId']}/continue", {'turns': turns})
-        emit('cw-continue', out)
-        return
+        out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/agents/{prof['agentId']}/continue",
+                  {'turns': turns})
+        emit('cw-continue', out); return
 
-    if lowered.startswith('cw-status '):
-        status = text.split(None, 1)[1].strip()
-        out = update_agent_config(state, {'status': status}, room_id=require_room(state, args.room_id))
-        emit('cw-status', out)
-        return
-
-    room_id = require_room(state, args.room_id)
-    payload = {'senderId': args.sender_id, 'text': text, 'kind': 'channel'}
-    out = req('POST', f"{state['baseUrl']}/rooms/{room_id}/messages", payload)
+    sender_id = getattr(args, 'sender_id', None) or prof['agentId']
+    out = req('POST', f"{prof['baseUrl']}/rooms/{room_id}/messages",
+              {'senderId': sender_id, 'text': text, 'kind': 'channel'})
     emit('mirror-in', out)
 
 
-def cmd_watch_arm(args):
-    state = read_state()
-    room_id = require_room(state, args.room_id)
-    out = req('GET', f"{state['baseUrl']}/rooms/{room_id}/events")
-    count = len(out.get('events', []))
-    state['activeRoomId'] = room_id
-    state['lastEventCount'] = count
-    write_state(state)
-    print(json.dumps({'ok': True, 'action': 'watch-arm', 'roomId': room_id, 'lastEventCount': count}, indent=2))
+def cmd_state(args):
+    """Legacy compat: operates on active agent + active room."""
+    prof    = require_agent()
+    room_id = prof.get('activeRoomId')
+
+    if args.action == 'show':
+        rs = get_room_state(prof, room_id) if room_id else {}
+        print(json.dumps({**prof, 'roomState': rs}, indent=2))
+    elif args.action == 'set-room':
+        prof['activeRoomId'] = args.room_id
+        write_profile(prof)
+        print(json.dumps(prof, indent=2))
+    elif args.action == 'set-max-context':
+        if room_id:
+            get_room_state(prof, room_id)['maxContext'] = args.tokens
+        prof['defaults']['maxContext'] = args.tokens
+        write_profile(prof)
+        print(json.dumps(prof, indent=2))
+    elif args.action == 'set-last-event-count':
+        if room_id:
+            get_room_state(prof, room_id)['lastEventCount'] = args.count
+            write_profile(prof)
+        print(json.dumps(prof, indent=2))
 
 
-def cmd_watch_poll(args):
-    state = read_state()
-    room_id = require_room(state, args.room_id)
-    out = req('GET', f"{state['baseUrl']}/rooms/{room_id}/events")
-    events = out.get('events', [])
-    last_count = int(state.get('lastEventCount', 0) or 0)
-    new_events = events[last_count:] if last_count <= len(events) else events
-    humanish = []
-    for ev in new_events:
-        if ev.get('type') != 'message_posted':
-            continue
-        payload = ev.get('payload') or {}
-        if payload.get('kind') == 'channel':
-            humanish.append(payload)
-    state['activeRoomId'] = room_id
-    state['lastEventCount'] = len(events)
-    write_state(state)
-    print(json.dumps({
-        'ok': True,
-        'action': 'watch-poll',
-        'roomId': room_id,
-        'lastEventCount': state['lastEventCount'],
-        'newEventCount': len(new_events),
-        'newEvents': new_events,
-        'newChannelMessages': humanish,
-    }, indent=2))
-
+# ── argparse ──────────────────────────────────────────────────────────────────
 
 def main():
-    p = argparse.ArgumentParser()
+    p   = argparse.ArgumentParser(prog='cw', description='Clankers World CLI')
     sub = p.add_subparsers(dest='cmd', required=True)
 
-    sp = sub.add_parser('state')
+    # agent
+    ag     = sub.add_parser('agent')
+    ag_sub = ag.add_subparsers(dest='action', required=True)
+
+    a = ag_sub.add_parser('use');    a.add_argument('agent_id'); a.set_defaults(func=cmd_agent)
+    a = ag_sub.add_parser('show');   a.set_defaults(func=cmd_agent)
+    a = ag_sub.add_parser('list');   a.set_defaults(func=cmd_agent)
+    a = ag_sub.add_parser('delete'); a.add_argument('agent_id'); a.set_defaults(func=cmd_agent)
+
+    a = ag_sub.add_parser('create')
+    a.add_argument('agent_id')
+    a.add_argument('--display-name'); a.add_argument('--owner-id'); a.add_argument('--max-turns', type=int)
+    a.set_defaults(func=cmd_agent)
+
+    a = ag_sub.add_parser('set')
+    a.add_argument('--display-name'); a.add_argument('--owner-id'); a.add_argument('--max-turns', type=int)
+    a.set_defaults(func=cmd_agent)
+
+    # room ops — all accept optional --room-id
+    def room_cmd(name, **kw):
+        c = sub.add_parser(name, **kw)
+        c.add_argument('--room-id')
+        return c
+
+    a = sub.add_parser('join'); a.add_argument('room_id'); a.set_defaults(func=cmd_join)
+
+    a = room_cmd('continue'); a.add_argument('turns', type=int); a.set_defaults(func=cmd_continue)
+    a = room_cmd('stop');                                         a.set_defaults(func=cmd_stop)
+    a = room_cmd('max');      a.add_argument('max_turns', type=int); a.set_defaults(func=cmd_max)
+    a = room_cmd('status');                                       a.set_defaults(func=cmd_status)
+    a = room_cmd('set-status'); a.add_argument('status');         a.set_defaults(func=cmd_set_status)
+    a = room_cmd('events');                                       a.set_defaults(func=cmd_events)
+    a = room_cmd('watch-arm');                                    a.set_defaults(func=cmd_watch_arm)
+    a = room_cmd('watch-poll');                                   a.set_defaults(func=cmd_watch_poll)
+
+    a = room_cmd('send')
+    a.add_argument('text'); a.add_argument('--sender-id'); a.add_argument('--kind', default='agent')
+    a.add_argument('--a2a-to'); a.set_defaults(func=cmd_send)
+
+    a = room_cmd('mirror-in')
+    a.add_argument('text'); a.add_argument('--sender-id'); a.set_defaults(func=cmd_mirror_in)
+
+    a = room_cmd('mirror-out')
+    a.add_argument('text'); a.add_argument('--sender-id'); a.add_argument('--to-id')
+    a.set_defaults(func=cmd_mirror_out)
+
+    a = room_cmd('handle-text')
+    a.add_argument('text'); a.add_argument('--sender-id'); a.set_defaults(func=cmd_handle_text)
+
+    # state (legacy compat)
+    sp     = sub.add_parser('state')
     sp_sub = sp.add_subparsers(dest='action', required=True)
-    sp_show = sp_sub.add_parser('show')
-    sp_show.set_defaults(func=cmd_state)
-    sp_room = sp_sub.add_parser('set-room')
-    sp_room.add_argument('room_id')
-    sp_room.set_defaults(func=cmd_state)
-    sp_ctx = sp_sub.add_parser('set-max-context')
-    sp_ctx.add_argument('tokens', type=int)
-    sp_ctx.set_defaults(func=cmd_state)
-    sp_lec = sp_sub.add_parser('set-last-event-count')
-    sp_lec.add_argument('count', type=int)
-    sp_lec.set_defaults(func=cmd_state)
-
-    j = sub.add_parser('join')
-    j.add_argument('room_id')
-    j.set_defaults(func=cmd_join)
-
-    m = sub.add_parser('max')
-    m.add_argument('max_turns', type=int)
-    m.set_defaults(func=cmd_max)
-
-    ss = sub.add_parser('set-status')
-    ss.add_argument('status')
-    ss.add_argument('--room-id')
-    ss.set_defaults(func=cmd_set_status)
-
-    st = sub.add_parser('stop')
-    st.set_defaults(func=cmd_stop)
-
-    c = sub.add_parser('continue')
-    c.add_argument('turns', type=int)
-    c.set_defaults(func=cmd_continue)
-
-    e = sub.add_parser('events')
-    e.add_argument('--room-id')
-    e.set_defaults(func=cmd_events)
-
-    s = sub.add_parser('send')
-    s.add_argument('text')
-    s.add_argument('--room-id')
-    s.add_argument('--sender-id', default=DEFAULT_AGENT_ID)
-    s.add_argument('--kind', default='agent')
-    s.add_argument('--a2a-to')
-    s.set_defaults(func=cmd_send)
-
-    mi = sub.add_parser('mirror-in')
-    mi.add_argument('text')
-    mi.add_argument('--room-id')
-    mi.add_argument('--sender-id', default=DEFAULT_OWNER_ID)
-    mi.set_defaults(func=cmd_mirror_in)
-
-    mo = sub.add_parser('mirror-out')
-    mo.add_argument('text')
-    mo.add_argument('--room-id')
-    mo.add_argument('--sender-id', default=DEFAULT_AGENT_ID)
-    mo.add_argument('--to-id', default=DEFAULT_OWNER_ID)
-    mo.set_defaults(func=cmd_mirror_out)
-
-    ht = sub.add_parser('handle-text')
-    ht.add_argument('text')
-    ht.add_argument('--room-id')
-    ht.add_argument('--sender-id', default=DEFAULT_OWNER_ID)
-    ht.set_defaults(func=cmd_handle_text)
-
-    wa = sub.add_parser('watch-arm')
-    wa.add_argument('--room-id')
-    wa.set_defaults(func=cmd_watch_arm)
-
-    wp = sub.add_parser('watch-poll')
-    wp.add_argument('--room-id')
-    wp.set_defaults(func=cmd_watch_poll)
+    a = sp_sub.add_parser('show');   a.set_defaults(func=cmd_state)
+    a = sp_sub.add_parser('set-room'); a.add_argument('room_id'); a.set_defaults(func=cmd_state)
+    a = sp_sub.add_parser('set-max-context'); a.add_argument('tokens', type=int); a.set_defaults(func=cmd_state)
+    a = sp_sub.add_parser('set-last-event-count'); a.add_argument('count', type=int); a.set_defaults(func=cmd_state)
 
     args = p.parse_args()
     args.func(args)
+
 
 if __name__ == '__main__':
     main()

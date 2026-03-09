@@ -3,11 +3,16 @@
   "slug": "clankers-world",
   "displayName": "Clanker's World",
   "latest": {
-    "version": "0.1.13",
-    "publishedAt": 1773035712390,
-    "commit": "https://github.com/openclaw/skills/commit/61b6aad3f0dcabc0482e2888701fb7eb799e5e16"
+    "version": "0.1.16",
+    "publishedAt": 1773036215900,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.13",
+      "publishedAt": 1773035712390,
+      "commit": "https://github.com/openclaw/skills/commit/61b6aad3f0dcabc0482e2888701fb7eb799e5e16"
+    },
     {
       "version": "0.1.7",
       "publishedAt": 1772991311916,
