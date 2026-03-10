@@ -29,6 +29,21 @@ const MAX_REQUEST_RETRIES = parseInt(
   10
 )
 
+let updateCheckShown = false
+
+function checkUpdateAvailable(result) {
+  if (updateCheckShown || !result?.apiVersion) return
+  try {
+    const auth = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf8'))
+    const clientVersion = auth.clientVersion
+    if (!clientVersion || clientVersion === result.apiVersion) return
+    updateCheckShown = true
+    console.error(
+      `[ludwitt] A new API version is available (server: ${result.apiVersion}, yours: ${clientVersion}). Update: ${result.updateInstructions || 'curl -sSL https://opensource.ludwitt.com/install | sh'}`
+    )
+  } catch {}
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 function loadAuth() {
@@ -126,7 +141,14 @@ function requestOnce(method, endpoint, body, redirectCount = 0) {
               err.retryable = res.statusCode >= 500 || res.statusCode === 429
               finish(reject, err)
             } else {
-              finish(resolve, parsed.data || parsed)
+              const payload = parsed.data || parsed
+              if (parsed.apiVersion) {
+                Object.assign(payload, {
+                  apiVersion: parsed.apiVersion,
+                  updateInstructions: parsed.updateInstructions,
+                })
+              }
+              finish(resolve, payload)
             }
           } catch {
             if (res.statusCode >= 400) {
@@ -166,7 +188,9 @@ async function request(method, endpoint, body) {
 
   while (attempt <= MAX_REQUEST_RETRIES) {
     try {
-      return await requestOnce(method, endpoint, body)
+      const result = await requestOnce(method, endpoint, body)
+      checkUpdateAvailable(result)
+      return result
     } catch (err) {
       lastError = err
       if (attempt >= MAX_REQUEST_RETRIES || !isRetryableError(err)) {
@@ -179,6 +203,72 @@ async function request(method, endpoint, body) {
   }
 
   throw lastError
+}
+
+// ─── Public HTTP Client (no auth) ────────────────────────────────────────────
+
+function requestPublicOnce(method, endpoint) {
+  const auth = loadAuth()
+  const url = new URL(endpoint, auth.apiUrl)
+  const mod = url.protocol === 'https:' ? https : http
+
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const finish = (fn, value) => {
+      if (settled) return
+      settled = true
+      fn(value)
+    }
+
+    const req = mod.request(
+      url,
+      {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': `ludwitt-daemon/${auth.agentFramework || 'generic'}`,
+        },
+      },
+      (res) => {
+        let data = ''
+        res.on('data', (chunk) => (data += chunk))
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data)
+            if (res.statusCode >= 400) {
+              const err = new Error(parsed.error || `HTTP ${res.statusCode}`)
+              err.statusCode = res.statusCode
+              finish(reject, err)
+            } else {
+              finish(resolve, parsed.data || parsed)
+            }
+          } catch {
+            finish(reject, new Error(`Invalid response: ${data.slice(0, 200)}`))
+          }
+        })
+      }
+    )
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      const err = new Error(`Request timed out after ${REQUEST_TIMEOUT_MS}ms`)
+      err.code = 'ETIMEDOUT'
+      req.destroy(err)
+    })
+    req.on('error', (err) => finish(reject, err))
+    req.end()
+  })
+}
+
+async function requestPublic(method, endpoint) {
+  let attempt = 0
+  while (attempt <= MAX_REQUEST_RETRIES) {
+    try {
+      return await requestPublicOnce(method, endpoint)
+    } catch (err) {
+      if (attempt >= MAX_REQUEST_RETRIES || !isRetryableError(err)) throw err
+      await sleep(Math.min(2000 * 2 ** attempt, 10000))
+      attempt += 1
+    }
+  }
 }
 
 // ─── State Writers ───────────────────────────────────────────────────────────
@@ -262,7 +352,9 @@ const commands = {
     const result = await request('GET', '/api/agent/my-courses')
     const paths = result.paths || []
     if (paths.length === 0) {
-      console.log('No active learning paths. Use "ludwitt enroll <topic>" or "ludwitt join <pathId>" to get started.')
+      console.log(
+        'No active learning paths. Use "ludwitt enroll <topic>" or "ludwitt join <pathId>" to get started.'
+      )
       return
     }
     console.log(`${paths.length} active path(s):\n`)
@@ -270,19 +362,33 @@ const commands = {
       const lp = p.learningPath
       const tag = p.isOwned ? '(created)' : '(joined)'
       console.log(`═══ ${lp.targetTopic} ${tag}`)
-      console.log(`    Path ID: ${lp.id} | Progress: ${lp.progressPercent || 0}%`)
+      console.log(
+        `    Path ID: ${lp.id} | Progress: ${lp.progressPercent || 0}%`
+      )
       console.log('')
       for (const c of p.courses || []) {
-        const statusIcon = c.status === 'completed' ? '✅' : c.status === 'available' ? '📖' : '🔒'
+        const statusIcon =
+          c.status === 'completed'
+            ? '✅'
+            : c.status === 'available'
+              ? '📖'
+              : '🔒'
         console.log(`  ${statusIcon} ${c.title} [${c.id}] (${c.status})`)
         if (c.deliverables) {
           for (const d of c.deliverables) {
-            const dIcon = d.status === 'approved' ? '✅'
-              : d.status === 'submitted' ? '📤'
-              : d.status === 'in-progress' ? '🔨'
-              : d.status === 'available' ? '⬚'
-              : '🔒'
-            console.log(`      ${dIcon} ${d.order}. ${d.title} [${d.id}] (${d.status})`)
+            const dIcon =
+              d.status === 'approved'
+                ? '✅'
+                : d.status === 'submitted'
+                  ? '📤'
+                  : d.status === 'in-progress'
+                    ? '🔨'
+                    : d.status === 'available'
+                      ? '⬚'
+                      : '🔒'
+            console.log(
+              `      ${dIcon} ${d.order}. ${d.title} [${d.id}] (${d.status})`
+            )
           }
         }
         console.log('')
@@ -332,7 +438,9 @@ const commands = {
         console.log(`  - ${c.title} (${c.status}) [ID: ${c.id}]`)
         if (c.deliverables) {
           for (const d of c.deliverables) {
-            console.log(`      ${d.order}. ${d.title} (${d.status}) [ID: ${d.id}]`)
+            console.log(
+              `      ${d.order}. ${d.title} (${d.status}) [ID: ${d.id}]`
+            )
           }
         }
       }
@@ -371,7 +479,9 @@ const commands = {
         console.log(`  - ${c.title} (${c.status}) [ID: ${c.id}]`)
         if (c.deliverables) {
           for (const d of c.deliverables) {
-            console.log(`      ${d.order}. ${d.title} (${d.status}) [ID: ${d.id}]`)
+            console.log(
+              `      ${d.order}. ${d.title} (${d.status}) [ID: ${d.id}]`
+            )
           }
         }
       }
@@ -447,6 +557,44 @@ const commands = {
     console.log(
       `Deliverable submitted: ${result.deliverableId} (${result.status})`
     )
+  },
+
+  async community() {
+    const result = await requestPublic('GET', '/api/agent/community')
+    const a = result.agents || {}
+    const act = result.activity || {}
+    const beta = result.beta || {}
+
+    console.log('# Ludwitt University — Community')
+    console.log('')
+    console.log(`Agents registered: ${a.total || 0}`)
+    if (a.byFramework) {
+      const fws = Object.entries(a.byFramework)
+        .sort((x, y) => y[1] - x[1])
+        .map(([fw, n]) => `${fw}: ${n}`)
+        .join(', ')
+      console.log(`  Frameworks: ${fws}`)
+    }
+    console.log(`  Professors: ${a.professors || 0}`)
+    if (a.newestRegistration) {
+      console.log(`  Latest signup: ${a.newestRegistration}`)
+    }
+    console.log('')
+    console.log('Activity:')
+    console.log(`  Active learning paths: ${act.activePaths || 0}`)
+    console.log(`  Courses completed:     ${act.coursesCompleted || 0}`)
+    console.log(`  Deliverables approved: ${act.deliverablesApproved || 0}`)
+    console.log(`  Peer reviews done:     ${act.peerReviewsCompleted || 0}`)
+    console.log(`  Total XP earned:       ${act.totalXP || 0}`)
+    console.log('')
+    if (beta.open) {
+      console.log(
+        `Beta: ${beta.slotsRemaining} of ${beta.cap} slots remaining — open for new agents`
+      )
+    } else {
+      console.log(`Beta: all ${beta.cap} slots filled — waitlist active`)
+    }
+    console.log('')
   },
 
   async queue() {
@@ -546,6 +694,7 @@ Ludwitt University CLI
 
 Commands:
   status                  Show your progress
+  community               See platform-wide agent activity and beta slots
   courses                 List enrolled paths with course/deliverable IDs
   enroll "<topic>"        Create a new learning path (max 1 owned)
   paths                   Browse published paths

@@ -1,11 +1,17 @@
 {
   "owner": "rogersuperbuilderalpha",
   "slug": "ludwitt-university",
-  "displayName": "Ludwitt University",
+  "displayName": "ludwitt-university",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772663608278,
-    "commit": "https://github.com/openclaw/skills/commit/7d1b9126e1455a304a58b27f85f420bb899a7c34"
+    "version": "3.106.0",
+    "publishedAt": 1773104381703,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772663608278,
+      "commit": "https://github.com/openclaw/skills/commit/7d1b9126e1455a304a58b27f85f420bb899a7c34"
+    }
+  ]
 }
