@@ -3,11 +3,16 @@
   "slug": "ttc",
   "displayName": "TTC CLI",
   "latest": {
-    "version": "0.1.5",
-    "publishedAt": 1772949017792,
-    "commit": "https://github.com/openclaw/skills/commit/978c54da90cb21815bb4b3f57c46d9d04b2ba857"
+    "version": "0.1.7",
+    "publishedAt": 1772999046930,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.5",
+      "publishedAt": 1772949017792,
+      "commit": "https://github.com/openclaw/skills/commit/978c54da90cb21815bb4b3f57c46d9d04b2ba857"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1772812544844,

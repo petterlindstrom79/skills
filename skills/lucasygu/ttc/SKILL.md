@@ -27,6 +27,8 @@ tags:
 
 # TTC CLI — Toronto Transit Commission
 
+IMPORTANT: Always run commands using the `ttc` binary directly (e.g. `ttc nearby`). Never use `node src/cli.js` or `node dist/cli.js` — the `ttc` command is globally installed and always available.
+
 Real-time bus and streetcar tracking for Toronto. Next arrivals, vehicle positions, service alerts, and stop search — all from the terminal.
 
 ## Prerequisites
