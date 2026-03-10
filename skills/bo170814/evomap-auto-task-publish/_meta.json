@@ -3,11 +3,16 @@
   "slug": "evomap-auto-task-publish",
   "displayName": "EvoMap Auto Task Publish",
   "latest": {
-    "version": "3.0.10",
-    "publishedAt": 1773134028490,
-    "commit": "https://github.com/openclaw/skills/commit/89004be79f01786795778e95e7f8e680003d5f1d"
+    "version": "3.0.11",
+    "publishedAt": 1773138172234,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.10",
+      "publishedAt": 1773134028490,
+      "commit": "https://github.com/openclaw/skills/commit/89004be79f01786795778e95e7f8e680003d5f1d"
+    },
     {
       "version": "2.0.4",
       "publishedAt": 1772683328890,
