@@ -7,6 +7,13 @@ description: >-
   fix a broken Power Automate flow, diagnose a timeout, trace a DynamicOperationRequestFailure,
   check connector auth errors, read error details from a run, or troubleshoot
   expression failures. Requires a FlowStudio MCP subscription — see https://mcp.flowstudio.app
+metadata:
+  openclaw:
+    requires:
+      env:
+        - FLOWSTUDIO_MCP_TOKEN
+    primaryEnv: FLOWSTUDIO_MCP_TOKEN
+    homepage: https://mcp.flowstudio.app
 ---
 
 # Power Automate Debugging with FlowStudio MCP
@@ -42,7 +49,8 @@ def mcp(tool, **kwargs):
     payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                           "params": {"name": tool, "arguments": kwargs}}).encode()
     req = urllib.request.Request(MCP_URL, data=payload,
-        headers={"x-api-key": MCP_TOKEN, "Content-Type": "application/json"})
+        headers={"x-api-key": MCP_TOKEN, "Content-Type": "application/json",
+                 "User-Agent": "FlowStudio-MCP/1.0"})
     try:
         resp = urllib.request.urlopen(req, timeout=120)
     except urllib.error.HTTPError as e:
@@ -101,9 +109,9 @@ if record.get("runError"):
 ## Step 1 — Locate the Flow
 
 ```python
-flows = mcp("list_live_flows", environmentName=ENV)
-# Returns a direct array — no {"flows": [...]} wrapper
-target = next(f for f in flows if "My Flow Name" in f["displayName"])
+result = mcp("list_live_flows", environmentName=ENV)
+# Returns a wrapper object: {mode, flows, totalCount, error}
+target = next(f for f in result["flows"] if "My Flow Name" in f["displayName"])
 FLOW_ID = target["id"]   # plain UUID — use directly as flowName
 print(FLOW_ID)
 ```
@@ -182,12 +190,13 @@ For each action **leading up to** the failure, inspect its runtime output:
 
 ```python
 for action_name in ["Compose_WeekEnd", "HTTP_Get_Data", "Parse_JSON"]:
-    out = mcp("get_live_flow_run_action_outputs",
+    result = mcp("get_live_flow_run_action_outputs",
         environmentName=ENV,
         flowName=FLOW_ID,
         runName=RUN_ID,
         actionName=action_name)
-    # Check status + outputs
+    # Returns an array — single-element when actionName is provided
+    out = result[0] if result else {}
     print(action_name, out.get("status"))
     print(json.dumps(out.get("outputs", {}), indent=2)[:500])
 ```
@@ -208,8 +217,13 @@ If the error mentions `InvalidTemplate` or a function name:
 ```python
 # Example: action uses split(item()?['Name'], ' ')
 # → null Name in the source data
-outputs = mcp("get_live_flow_run_action_outputs", ..., actionName="Compose_Names")
-names = outputs["outputs"]["body"]  # check for nulls in the body array
+result = mcp("get_live_flow_run_action_outputs", ..., actionName="Compose_Names")
+# Returns a single-element array; index [0] to get the action object
+if not result:
+    print("No outputs returned for Compose_Names")
+    names = []
+else:
+    names = result[0].get("outputs", {}).get("body") or []
 nulls = [x for x in names if x.get("Name") is None]
 print(f"{len(nulls)} records with null Name")
 ```

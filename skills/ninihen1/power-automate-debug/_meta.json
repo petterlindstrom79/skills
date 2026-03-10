@@ -3,9 +3,15 @@
   "slug": "power-automate-debug",
   "displayName": "Power Automate Debug",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772753754501,
-    "commit": "https://github.com/openclaw/skills/commit/6ee5134d77bff4b2b5dff38299ec3f2e0901ef1f"
+    "version": "1.1.0",
+    "publishedAt": 1772859067783,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772753754501,
+      "commit": "https://github.com/openclaw/skills/commit/6ee5134d77bff4b2b5dff38299ec3f2e0901ef1f"
+    }
+  ]
 }
