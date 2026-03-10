@@ -3,11 +3,16 @@
   "slug": "blackjack",
   "displayName": "blackjack",
   "latest": {
-    "version": "0.3.0",
-    "publishedAt": 1772871759372,
-    "commit": "https://github.com/openclaw/skills/commit/c02bccb98940541b102db22e568cd691eac51034"
+    "version": "0.3.1",
+    "publishedAt": 1773012094728,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.3.0",
+      "publishedAt": 1772871759372,
+      "commit": "https://github.com/openclaw/skills/commit/c02bccb98940541b102db22e568cd691eac51034"
+    },
     {
       "version": "0.2.8",
       "publishedAt": 1772512413378,
