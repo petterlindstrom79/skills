@@ -1,5 +1,6 @@
 ---
 name: homebrew-bridge
+version: "0.6.1"
 description: Expose Mac Homebrew tools like brew, gh, and other /opt/homebrew/bin CLIs on a Linux OpenClaw gateway by installing explicit same-LAN SSH wrappers with optional Wake-on-LAN and OpenClaw config auto-discovery.
 metadata: {"openclaw":{"emoji":"🍺"}}
 ---

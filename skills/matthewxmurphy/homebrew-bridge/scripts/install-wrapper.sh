@@ -85,7 +85,7 @@ WAKE_RETRIES=$(printf '%q' "$WAKE_RETRIES")
 run_remote() {
   local remote_cmd
   remote_cmd=\$(printf '%q ' "\$REMOTE_BIN" "\$@")
-  ssh "\${SSH_OPTS[@]}" -T "\$HOST" "bash -lc \$remote_cmd"
+  ssh "\${SSH_OPTS[@]}" -T "\$HOST" "bash -lc \$(printf %q "\$remote_cmd")"
 }
 
 send_wol() {
