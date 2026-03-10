@@ -2,57 +2,11 @@
 
 /**
  * Personify Memory - 优化版每日复盘
- * 混合方案：关键词过滤 + 语义验证
+ * 添加详细日志，找出性能瓶颈
  */
 
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
-
-// LLM API 配置（用于语义验证）
-// 优先从环境变量读取，其次从 OpenClaw 配置文件读取，最后使用默认值
-function getLLMConfig() {
-  // 1. 环境变量（最高优先级）
-  if (process.env.LLM_API_KEY) {
-    return {
-      baseUrl: process.env.LLM_BASE_URL || 'coding.dashscope.aliyuncs.com',
-      apiKey: process.env.LLM_API_KEY,
-      model: process.env.LLM_MODEL || 'glm-5'
-    };
-  }
-  
-  // 2. 从 OpenClaw 配置文件读取
-  try {
-    const configPath = path.join(process.env.HOME || '/root', '.openclaw', 'openclaw.json');
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      const bailian = config.models?.providers?.bailian;
-      if (bailian && bailian.apiKey) {
-        // 解析 baseUrl，移除协议和路径
-        let baseUrl = bailian.baseUrl;
-        baseUrl = baseUrl.replace(/^https?:\/\//, '');  // 移除 https://
-        baseUrl = baseUrl.replace(/\/v1.*$/, '');       // 移除 /v1 及之后的路径
-        return {
-          baseUrl: baseUrl,
-          apiKey: bailian.apiKey,
-          model: 'glm-5'
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('⚠️ 读取 OpenClaw 配置失败:', err.message);
-  }
-  
-  // 3. 默认值（仅用于开发测试）
-  console.warn('⚠️ 未找到 LLM API 配置，请设置环境变量 LLM_API_KEY 或配置 OpenClaw');
-  return {
-    baseUrl: 'coding.dashscope.aliyuncs.com',
-    apiKey: process.env.LLM_API_KEY || '',
-    model: 'glm-5'
-  };
-}
-
-const LLM_CONFIG = getLLMConfig();
 
 class DailyReview {
   constructor(basePath = '/root/openclaw/memory') {
@@ -63,112 +17,6 @@ class DailyReview {
     this.knowledgeFile = path.join(basePath, 'knowledge-base.md');
     this.memoryFile = path.join(basePath, '..', 'MEMORY.md');
     this.indexFile = path.join(basePath, 'memory-index.json');
-  }
-
-  /**
-   * 语义验证 - 使用 LLM 判断内容是否是真正的经验教训
-   */
-  async validateByLLM(contents, type = 'lesson') {
-    if (contents.length === 0) return [];
-    
-    const prompts = {
-      lesson: `判断以下内容是否是"可复用的经验教训"。
-
-判断标准：
-1. 包含明确的问题描述（技术问题、配置问题、使用问题等）
-2. 包含具体的解决方案（不是泛泛而谈）
-3. 有知识价值（其他人遇到类似问题可以参考）
-4. 不是认错、不是对话、不是报告标题
-
-内容：
-"""
-{{CONTENT}}
-"""
-
-请回答：是/否，并简述理由（一句话）。格式：是|理由 或 否|理由`,
-      moment: `判断以下内容是否包含"温暖的情感时刻"。
-
-判断标准：
-1. 包含真诚的情感表达
-2. 是人与人之间的互动（信任、感谢、承诺等）
-3. 不是工作汇报、不是技术讨论
-
-内容：
-"""
-{{CONTENT}}
-"""
-
-请回答：是/否，并简述理由（一句话）。格式：是|理由 或 否|理由`
-    };
-
-    const validated = [];
-    
-    for (const item of contents) {
-      try {
-        const prompt = prompts[type]?.replace('{{CONTENT}}', item.content.substring(0, 1000)) || prompts.lesson;
-        
-        const result = await this.callLLM(prompt);
-        
-        if (result && result.startsWith('是')) {
-          validated.push(item);
-          console.log(`   ✅ 验证通过: ${item.content.substring(0, 50)}...`);
-        } else {
-          console.log(`   ❌ 验证失败: ${item.content.substring(0, 50)}...`);
-        }
-        
-        // 避免 API 限流
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (err) {
-        console.error(`   ⚠️ 语义验证失败: ${err.message}`);
-        // 验证失败时保守处理，保留内容
-        validated.push(item);
-      }
-    }
-    
-    return validated;
-  }
-
-  /**
-   * 调用 LLM API
-   */
-  async callLLM(prompt) {
-    return new Promise((resolve, reject) => {
-      const data = JSON.stringify({
-        model: LLM_CONFIG.model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 100,
-        temperature: 0.1
-      });
-
-      const options = {
-        hostname: LLM_CONFIG.baseUrl,
-        port: 443,
-        path: '/v1/chat/completions',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${LLM_CONFIG.apiKey}`
-        }
-      };
-
-      const req = https.request(options, (res) => {
-        let body = '';
-        res.on('data', chunk => body += chunk);
-        res.on('end', () => {
-          try {
-            const json = JSON.parse(body);
-            const content = json.choices?.[0]?.message?.content || '';
-            resolve(content.trim());
-          } catch (err) {
-            reject(new Error(`解析响应失败: ${err.message}`));
-          }
-        });
-      });
-
-      req.on('error', reject);
-      req.write(data);
-      req.end();
-    });
   }
 
   async runDailyReview() {
@@ -196,13 +44,8 @@ class DailyReview {
     console.log(`✅ 完成 (${Date.now() - startTime}ms)\n`);
     startTime = Date.now();
 
-    // 4. 更新知识库（先语义验证）
-    console.log('[4/7] 更新知识库（语义验证）...');
-    if (extractedData.lessons.length > 0) {
-      console.log(`   📊 待验证 ${extractedData.lessons.length} 条候选经验...`);
-      const validatedLessons = await this.validateByLLM(extractedData.lessons, 'lesson');
-      extractedData.lessons = validatedLessons;
-    }
+    // 4. 更新知识库
+    console.log('[4/7] 更新知识库...');
     this.updateKnowledgeBase(extractedData);
     console.log(`✅ 完成 (${Date.now() - startTime}ms)\n`);
     startTime = Date.now();
@@ -267,61 +110,51 @@ class DailyReview {
       preference: [/我喜欢/gi, /我不喜欢/gi, /习惯了/gi, /偏好/gi, /习惯用/gi]
     };
 
-    // 只处理对话消息，排除工具调试信息
-    const VALID_ROLES = ['user', 'assistant'];
-    // 对话内容合理长度
-    const MIN_DECISION_LEN = 30;
-    const MAX_DIALOGUE_LEN = 3000;
-
     // 排除模式（这些内容不应该被提取）
     const EXCLUDE_PATTERNS = [
-      /^\d+\./,  // 列表项（如 "1. xxx"）
+      /^\d+\./,  // 列表项
       /^\[/,     // JSON 数组
       /^\{/,     // JSON 对象
       /```/,     // 代码块
-      /'type':/gi,  // JSON 格式
-      /"type":/gi,  // JSON 格式
-      /^\*\*/,   // Markdown 粗体开头（通常是格式化内容）
-      /^好的/gi,  // 回复性内容
-      /^让我/gi,  // 回复性内容
-      /^我这就/gi, // 回复性内容
-      /需要我/gi, // 询问性内容
-      /请告诉/gi, // 询问性内容
+      /'type':/gi,
+      /"type":/gi,
+      /^\*\*/,   // Markdown 粗体
+      /^好的/gi,
+      /^让我/gi,
+      /^我这就/gi,
+      /需要我/gi,
+      /请告诉/gi,
     ];
+
+    const MIN_DECISION_LEN = 30;
+    const MAX_LEN = 3000;
 
     files.forEach(file => {
       file.messages.forEach((msg) => {
-        // 跳过 toolResult 等工具调试信息
-        const role = msg.message?.role;
-        if (!VALID_ROLES.includes(role)) return;
-
         const text = this.extractTextFromMessage(msg);
         if (!text) return;
 
         const trimmedText = text.trim();
-
-        // 跳过超长的工具输出
-        if (trimmedText.length > MAX_DIALOGUE_LEN) return;
+        if (trimmedText.length > MAX_LEN) return;
 
         // 检查是否应该排除
         const shouldExclude = EXCLUDE_PATTERNS.some(pattern => pattern.test(trimmedText));
         if (shouldExclude) return;
 
-        // 分类提取
         if (patterns.project.some(p => p.test(trimmedText))) {
-          data.projects.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename, role });
+          data.projects.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename });
         }
         if (patterns.lesson.some(p => p.test(trimmedText))) {
-          data.lessons.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename, role });
+          data.lessons.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename });
         }
         if (patterns.moment.some(p => p.test(trimmedText))) {
-          data.moments.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename, role });
+          data.moments.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename });
         }
         if (patterns.decision.some(p => p.test(trimmedText)) && trimmedText.length >= MIN_DECISION_LEN) {
-          data.decisions.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename, role });
+          data.decisions.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename });
         }
         if (patterns.preference.some(p => p.test(trimmedText))) {
-          data.preferences.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename, role });
+          data.preferences.push({ date: file.date, content: trimmedText.substring(0, 500), source: file.filename });
         }
       });
     });
@@ -345,12 +178,11 @@ class DailyReview {
       emotion = JSON.parse(fs.readFileSync(this.emotionFile, 'utf-8'));
     }
 
-    // 更新项目进展（优化：只匹配合理的项目名，排除 Markdown 符号）
-    if (!emotion.Amber.projects) emotion.Amber.projects = {};
+    // 更新项目进展
     data.projects.forEach(project => {
-      // 排除 Markdown 标题、特殊符号，只匹配字母数字中文
-      const match = project.content.match(/([a-zA-Z\u4e00-\u9fa5][a-zA-Z\u4e00-\u9fa50-9_-]{0,50}).*完成/);
-      if (match && match[1].length <= 50 && !/^[#\s\[\]{}()]+$/.test(match[1])) {
+      if (!emotion.Amber.projects) emotion.Amber.projects = {};
+      const match = project.content.match(/([^\s:：]+).*完成/);
+      if (match) {
         emotion.Amber.projects[match[1]] = `✅ 已完成（${project.date}）`;
       }
     });

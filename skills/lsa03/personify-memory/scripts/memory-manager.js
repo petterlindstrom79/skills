@@ -21,20 +21,6 @@ class MemoryManager {
     this.synonymsEnabled = true;  // 是否启用同义词扩展
     this.minMatchCount = 1;       // 最少匹配关键词数
     
-    // 核心记忆章节映射
-    this.SECTION_MAP = {
-      '情感交流': '## 💬 重要对话记录',
-      '家庭信息': '## 👤 主人信息',
-      '人生哲理': '## 🧠 知识管理策略',
-      '承诺约定': '## 💬 重要对话记录',
-      '重要决策': '## 💬 重要对话记录',
-      '重要对话': '## 💬 重要对话记录',
-      '经验总结': '## 📚 重要经验总结',
-      '用户偏好': '## 💡 偏好和习惯',
-      '项目进展': '## 🎯 当前项目状态',
-      '基础设施': '## 🖥️ 重要基础设施'
-    };
-    
     // 确保目录存在
     this.ensureDirectories();
   }
@@ -81,7 +67,7 @@ class MemoryManager {
 
     switch (type) {
       case 'core':
-        filePath = path.join(this.basePath, 'MEMORY.md');
+        filePath = path.join(this.basePath, '..', 'MEMORY.md');
         entry = await this.updateCoreMemory(content, title, category, tags);
         break;
 
@@ -129,10 +115,9 @@ class MemoryManager {
 
   /**
    * 更新核心记忆 (MEMORY.md)
-   * 根据 category 插入到对应章节
    */
   async updateCoreMemory(content, title, category, tags) {
-    const filePath = path.join(this.basePath, 'MEMORY.md');
+    const filePath = path.join(this.basePath, '..', 'MEMORY.md');
     const entry = {
       id: `mem_${Date.now()}`,
       title: title || '核心记忆',
@@ -149,50 +134,36 @@ class MemoryManager {
     }
 
     // 读取现有内容
-    let fileContent = fs.readFileSync(filePath, 'utf-8');
-    
-    // 确定目标章节
-    const sectionHeader = this.SECTION_MAP[category] || '## 💬 重要对话记录';
-    
-    // 查找章节位置
-    const sectionIndex = fileContent.indexOf(sectionHeader);
-    
-    if (sectionIndex === -1) {
-      // 章节不存在，创建新章节
-      const newSection = `\n\n${sectionHeader}\n\n### ${title || '新记忆'}\n\n${content}\n`;
-      fileContent += newSection;
-      console.log(`  📝 创建新章节：${sectionHeader}`);
-    } else {
-      // 找到章节，在章节末尾插入
-      // 查找下一个章节的开始位置
-      const nextSectionMatch = fileContent.substring(sectionIndex + sectionHeader.length).match(/\n## /);
-      let insertPosition;
-      
-      if (nextSectionMatch) {
-        insertPosition = sectionIndex + sectionHeader.length + nextSectionMatch.index;
-      } else {
-        // 没有下一个章节，插入到文件末尾
-        insertPosition = fileContent.length;
-      }
-      
-      // 构建新内容
-      const newEntry = `\n\n### ${title || '新记忆'}\n\n${content}\n`;
-      
-      // 插入内容
-      fileContent = fileContent.substring(0, insertPosition) + newEntry + fileContent.substring(insertPosition);
+    let existingContent = '';
+    if (fs.existsSync(filePath)) {
+      existingContent = fs.readFileSync(filePath, 'utf-8');
     }
 
-    // 更新最后更新时间
-    const today = new Date().toISOString().split('T')[0];
-    fileContent = fileContent.replace(
-      /最后更新：\d{4}-\d{2}-\d{2}/,
-      `最后更新：${today}`
-    );
+    // 查找合适的位置插入（在"身份与成长"章节后，或在文件末尾）
+    const insertMarker = '## 🦞 身份与成长';
+    const insertIndex = existingContent.indexOf(insertMarker);
+    
+    let newContent;
+    if (insertIndex !== -1) {
+      // 找到插入点，在该章节后插入
+      const sectionEnd = existingContent.indexOf('\n\n---', insertIndex);
+      if (sectionEnd !== -1) {
+        // 在章节结束前插入
+        const insertPos = existingContent.indexOf('\n', sectionEnd);
+        newContent = existingContent.substring(0, insertPos) + 
+          `\n\n### 📌 ${title || '新记忆'}\n\n${content}\n` + 
+          existingContent.substring(insertPos);
+      } else {
+        newContent = existingContent + `\n\n### 📌 ${title || '新记忆'}\n\n${content}\n`;
+      }
+    } else {
+      // 找不到标记，追加到文件末尾
+      newContent = existingContent + `\n\n---\n\n### 📌 ${title || '新记忆'}\n\n${content}\n`;
+    }
 
-    // 写入文件
-    fs.writeFileSync(filePath, fileContent, 'utf-8');
+    fs.writeFileSync(filePath, newContent, 'utf-8');
 
-    console.log(`✅ Core memory updated: ${filePath} (${category})`);
+    console.log(`✅ Core memory updated: ${filePath}`);
     return entry;
   }
 

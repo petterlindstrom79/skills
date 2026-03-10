@@ -136,25 +136,43 @@ class ReportGenerator {
   }
 
   /**
-   * 提取重要事件（简化版：按关键词匹配）
+   * 提取重要事件（优化版：模式匹配 + 上下文检查）
    * @param {Array} dailyFiles - daily 文件列表
    * @returns {Array} 重要事件列表
    */
   extractImportantEvents(dailyFiles) {
     const events = [];
-    const keywords = ['记住', '重要', '承诺', '约定', '完成', '成功', '平等', '陪伴', '家人'];
     const seen = new Set();
+    
+    // 更精确的模式匹配（带上下文）
+    const importantPatterns = [
+      /记住.*重要/i,           // 记住...重要
+      /重要.*记住/i,           // 重要...记住
+      /承诺.*一定/i,           // 承诺...一定
+      /约定.*记得/i,           // 约定...记得
+      /完成.*成功/i,           // 完成...成功
+      /配置.*成功/i,           // 配置...成功
+      /平等.*陪伴/i,           // 平等...陪伴
+      /家人.*温暖/i,           // 家人...温暖
+      /决定.*采用/i,           // 决定...采用
+      /发现.*问题.*解决/i      // 发现...问题...解决
+    ];
     
     dailyFiles.forEach(file => {
       file.messages.forEach(msg => {
         if (msg.role !== 'user') return;
         
         const text = this.extractText(msg.content);
-        if (!text) return;
+        if (!text || text.length < 10) return;
         
-        // 简单关键词匹配
-        const matchedKeywords = keywords.filter(k => text.includes(k));
-        if (matchedKeywords.length > 0) {
+        // 排除系统消息和工具输出
+        if (text.startsWith('System:') || text.includes('```') || text.includes('[2026-')) {
+          return;
+        }
+        
+        // 模式匹配
+        const matchedPattern = importantPatterns.find(p => p.test(text));
+        if (matchedPattern) {
           const eventKey = `${file.date}-${text.substring(0, 50)}`;
           if (!seen.has(eventKey)) {
             seen.add(eventKey);
@@ -162,7 +180,7 @@ class ReportGenerator {
               date: file.date,
               content: text.substring(0, 100),
               timestamp: msg.timestamp || 0,
-              keywords: matchedKeywords
+              matchedPattern: matchedPattern.toString()
             });
           }
         }

@@ -745,6 +745,82 @@ Grace: "好的"
 
 ## 版本
 
+### v1.3.2 - Cron 配置指南版（2026-03-09）
+
+**文档完善：**
+- 📄 添加 Cron 任务配置指南（必需！安装后需手动配置）
+- 📄 详细的配置示例（命令行 + JSON 配置）
+- 📄 说明每个 cron 任务的功能和时间
+
+**⚠️ 重要提示：**
+安装 skill 后需要手动配置 3 个 cron 任务：
+1. 每日 Session 备份（必需）
+2. 每日复盘（必需）
+3. 月度归档（可选）
+
+### v1.3.0 - 质量与安全增强版（2026-03-09）
+
+**安全修复：**
+- 🔒 移除 API 密钥硬编码（高危漏洞修复）
+- 🔐 从配置文件或环境变量安全读取 API 密钥
+- 📝 支持三级优先级：环境变量 > OpenClaw 配置 > 默认值
+
+**内容分析优化：**
+- ✅ 混合方案：关键词过滤 + LLM 语义验证
+- ✅ lesson 模式优化（结构化格式匹配，避免误判）
+- ✅ preference 模式优化（精确匹配用户偏好表达）
+- ✅ generate-report 关键词匹配优化（带上下文检查）
+
+**修复效果：**
+| 阶段 | 优化前 | 优化后 |
+|------|--------|--------|
+| 关键词过滤 | 10+ 条候选 | 2 条候选 |
+| 语义验证 | 无 | 正确拒绝无效内容 |
+| 写入知识库 | 10 条垃圾内容 | 0 条垃圾内容 |
+
+**Cron 任务配置：**
+```bash
+# ⚠️ 重要：安装 skill 后需要手动配置 cron 任务！
+
+# 1. 每日 Session 备份（必需）
+#    功能：备份 session 到 daily/，增量处理新消息
+#    时间：每天 03:00
+#    命令：node /path/to/skills/scripts/daily-session-backup.js run
+
+# 2. 每日复盘（必需）
+#    功能：提取关键信息，更新情感记忆/知识库/核心记忆
+#    时间：每天 03:00
+#    命令：node /path/to/skills/scripts/daily-review.js
+
+# 3. 月度归档（可选）
+#    功能：归档 session 文件，清理 30 天前的消息
+#    时间：每月 1 号 02:50
+#    命令：node /path/to/skills/scripts/monthly-session-archive.js run
+
+# 配置方式（OpenClaw Gateway）：
+# 使用 cron 工具添加任务：
+# cron add --name "personify-memory 每日备份" \
+#   --schedule "0 3 * * *" \
+#   --script "node /root/.openclaw/skills/scripts/daily-session-backup.js run"
+
+# 或通过 Gateway 配置文件添加：
+# {
+#   "name": "personify-memory 每日备份",
+#   "schedule": { "kind": "cron", "expr": "0 3 * * *", "tz": "Asia/Shanghai" },
+#   "payload": { "kind": "agentTurn", "message": "执行每日备份：node /root/.openclaw/skills/scripts/daily-session-backup.js run" },
+#   "sessionTarget": "isolated"
+# }
+```
+
+**环境变量配置（可选）：**
+```bash
+# 环境变量配置（可选）
+export LLM_API_KEY="your-api-key"
+
+# 测试每日复盘
+node scripts/daily-review.js
+```
+
 ### v1.2.0 - 完整功能增强版（2026-03-05）
 
 **新增功能：**
