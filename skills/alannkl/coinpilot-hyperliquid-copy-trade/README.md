@@ -4,6 +4,11 @@ Use this skill to access and control Coinpilot, allowing you to discover, invest
 
 It supports non-custodial wallet infrastructure, near-instant execution, and real-time position management with advanced trading controls.
 
+Runtime use requires a local credentials JSON containing high-sensitivity secrets:
+Coinpilot API key, Privy user ID, one primary wallet private key, and 1-9
+follower wallet private keys. The install/runtime metadata points to the local
+file path; the secrets themselves remain inside that local file.
+
 ## What this skill does
 
 Connect your agent to Coinpilot to mirror top-performing Hyperliquid traders through a discovery and execution engine.
@@ -15,13 +20,13 @@ Connect your agent to Coinpilot to mirror top-performing Hyperliquid traders thr
 - **Advanced Risk Management**: Set automated take profit (TP) and stop loss (SL) at both subscription and position levels.
 - **Self-Custodial Execution**: Powered by Privy. Your keys, your crypto.
 
-Full platform functions are documented at <https://docs.trycoinpilot.com/>.
+Full platform functions are documented at <https://docs.coinpilot.com/>.
 
 ## Setup Instructions
 
 ### 1) Prepare your Coinpilot account
 
-1. Download Coinpilot on [App Store or Google Play](https://refer.trycoinpilot.com/7ef646).
+1. Download Coinpilot on [App Store or Google Play](https://refer.coinpilot.com/7ef646).
 2. Create an account and fund your trading account.
 3. Obtain your Coinpilot **API Key** and **Privy User ID** by opening a ticket in the [Coinpilot Discord](https://discord.com/invite/UTfdDcMTHH).
 
@@ -87,13 +92,21 @@ This file contains high-sensitivity secrets (API key and private keys):
 - Never commit it to Git or share it publicly.
 - Prefer referencing an existing local path (or `COINPILOT_CONFIG_PATH`) over
   creating extra plaintext copies.
-- Only share it with a trusted local agent runtime when you explicitly want
-  copy-trading actions executed.
+- Keep it on your own machine and let only a trusted local agent runtime read it by path.
+- Do not paste the populated file or any private keys into chat, tickets, or shared docs.
+
+For clarity: the skill install metadata may mention only `COINPILOT_CONFIG_PATH`,
+`COINPILOT_API_BASE_URL`, and `tmp/coinpilot.json`, but runtime trading actions
+also require the secrets stored inside that local credentials file.
+
+Coinpilot API calls from this skill require `x-api-key`, `x-wallet-private-key`,
+and `x-user-id`, which are sourced from this credentials file.
 
 ### 4) Connect and verify
 
-1. Share your local credentials file with your agent runtime (OpenClaw or equivalent).
-2. Verify integration with a balance query, for example:
+1. Configure your local agent runtime (OpenClaw or equivalent) to read the file from a local path, such as `COINPILOT_CONFIG_PATH` or an explicit `--wallets` path.
+2. Do not paste the credentials JSON into chat; keep it as a local file reference only.
+3. Verify integration with a balance query, for example:
    - "What is my current balance on Coinpilot?"
 
 ## Use Cases and Example Prompts
@@ -117,6 +130,6 @@ Use natural language to automate and optimize your strategy:
 - **On-Chain Verification**: Every trade can be verified on Hyperliquid Explorer.
 - **0.05% Flat Fee**: Transparent platform fee per trade charged by Coinpilot.
 
-For more details and full capabilities, visit the [Coinpilot documentation](https://docs.trycoinpilot.com/).
+For more details and full capabilities, visit the [Coinpilot documentation](https://docs.coinpilot.com/).
 
 > Disclaimer: Trading perpetuals involves significant risk. This skill is an automation tool and does not constitute financial advice.
