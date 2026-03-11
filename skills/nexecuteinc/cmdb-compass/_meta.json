@@ -1,0 +1,11 @@
+{
+  "owner": "nexecuteinc",
+  "slug": "cmdb-compass",
+  "displayName": "CMDB Compass",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773218196908,
+    "commit": null
+  },
+  "history": []
+}
