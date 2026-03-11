@@ -1,0 +1,11 @@
+{
+  "owner": "ppopen",
+  "slug": "openclaw-skill-git-manager",
+  "displayName": "Git Manager",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773105194902,
+    "commit": null
+  },
+  "history": []
+}
