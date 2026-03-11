@@ -9,9 +9,9 @@
  * @license  ISC
  *
  * 功能：
- * 1. 通过API将文章上传到公众号草稿箱
+ * 1. 通过微信API将文章上传到公众号草稿箱
  * 2. 支持HTML格式内容
- * 3. 自动上传图片到素材库
+ * 3. 自动获取 access_token 并提交草稿
  *
  * 使用方式：
  *   node upload-draft.js --appid <appid> --secret <secret> --html <文件路径> --title "标题"
@@ -92,6 +92,11 @@ function httpsRequest(url, method = 'GET', data = null) {
       }
     };
 
+    if (data) {
+      const payload = JSON.stringify(data);
+      options.headers['Content-Length'] = Buffer.byteLength(payload);
+    }
+
     const req = https.request(options, (res) => {
       let body = '';
       res.on('data', chunk => body += chunk);
@@ -122,15 +127,6 @@ async function getAccessToken(appid, secret) {
   const result = await httpsRequest(url);
   console.log(`✅ access_token获取成功（有效期7200秒）`);
   return result.access_token;
-}
-
-// 上传图片到素材库（临时素材）
-async function uploadImage(accessToken, imagePath) {
-  console.log(`📤 正在上传图片: ${path.basename(imagePath)}`);
-  // 注意：这里需要用multipart/form-data上传，简化起见暂时跳过
-  // 实际使用时需要用form-data库或者手动构造multipart请求
-  console.log('⚠️ 图片上传功能需要额外实现，当前版本暂不支持');
-  return null;
 }
 
 // 新增草稿

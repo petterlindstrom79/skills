@@ -3,9 +3,15 @@
   "slug": "magicx-wechat-publisher",
   "displayName": "WeChat Publisher 微信公众号发布",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772980051100,
-    "commit": "https://github.com/openclaw/skills/commit/3c70733306f025130587ede71f165197f5ccffd7"
+    "version": "1.0.1",
+    "publishedAt": 1773064571032,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772980051100,
+      "commit": "https://github.com/openclaw/skills/commit/3c70733306f025130587ede71f165197f5ccffd7"
+    }
+  ]
 }
