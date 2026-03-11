@@ -1,0 +1,11 @@
+{
+  "owner": "placeboy",
+  "slug": "movie-search",
+  "displayName": "movie-search",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773234644890,
+    "commit": null
+  },
+  "history": []
+}
