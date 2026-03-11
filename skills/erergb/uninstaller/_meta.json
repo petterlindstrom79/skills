@@ -1,0 +1,11 @@
+{
+  "owner": "erergb",
+  "slug": "uninstaller",
+  "displayName": "Uninstaller",
+  "latest": {
+    "version": "1.0.9",
+    "publishedAt": 1773232271671,
+    "commit": null
+  },
+  "history": []
+}
