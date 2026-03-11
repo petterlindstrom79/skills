@@ -5,7 +5,36 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.2.3] — transparency & dry-run
+## [1.2.5] — setup flow fix
+
+### Fixed
+- Space in backup path (e.g. "OpenClaw backups") caused `set -euo pipefail` to kill setup during dry-run, silently skipping the cron question. Config is now written via `jq -n` with proper argument passing — paths with spaces handled correctly throughout.
+- Dry-run is now wrapped in `|| { warn... }` — never fatal to setup regardless of exit code.
+- `prompt_yn` default changed to `n` everywhere — Enter alone no longer silently accepts; must explicitly type y or n.
+- Cron question moved to Phase 1 (all questions upfront) so it can never be skipped by a later failure.
+- Cron default changed from `y` to `n` — explicit opt-in required.
+
+### Changed
+- Setup flow restructured into 5 explicit phases: Questions → Write config → Install cron → Dry run → Summary.
+- Cron recommended time updated to 03:15 (after Total Recall dream cycle at 03:00).
+- Summary always shown regardless of dry-run outcome.
+
+---
+
+## [1.2.4] — setup wizard & dedicated config
+
+### Added
+- `setup.sh` — interactive first-run configurator: asks questions, writes `~/.openclaw/config/healthy-backup/hb-config.json`, creates encryption key file, runs `--dry-run` automatically, optionally installs cron job. Re-runnable for reconfiguration.
+- Dedicated config path `~/.openclaw/config/healthy-backup/hb-config.json` — fully independent of `openclaw.json` structure, works on any OpenClaw rig regardless of how `skills` is organised
+- Health audit check 0: warns clearly if setup hasn't been run (no config file found)
+- `setup.sh` added to `package.json` bin and files
+
+### Changed
+- `cfg()` now reads from `hb-config.json` first, then env vars, then built-in defaults — no longer attempts to parse `openclaw.json` skill entries
+- SKILL.md setup section leads with `setup.sh` as the primary install path
+- Checksums updated for all three scripts
+
+---
 
 ### Added
 - `--dry-run` flag: runs full health audit and prints every file that *would* be staged (via `rsync --dry-run`) without writing anything — directly addresses the auditor's recommendation to test before scheduling
@@ -108,3 +137,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Config resolution hierarchy: skill config → env var → auto-detect
 - Health report (`HEALTH_REPORT.txt`) embedded in every archive
 - Inspired by **simple-backup** (VACInc) and **claw-backup** (vidarbrekke)
+
+---
+
+## [1.3.0] — compaction & verify merge
+
+### Changed
+- `verify-backup.sh` eliminated — merged into `healthy-backup.sh` as `--verify [path]` subcommand. Now just 2 scripts total.
+- `healthy-backup.sh`: 384 → 259 lines. Stage functions collapsed, dry-run and audit loops tightened, variable names shortened, UI helpers deduplicated.
+- `setup.sh`: 210 → 170 lines. Same refactor pass applied.
+- Total: 647 → 429 lines (-34%) with identical capability.
+- Cron default time updated to 05:00 (2hr buffer after Total Recall dream cycle at 03:00).
+
+### New usage
+```
+healthy-backup.sh             # full backup
+healthy-backup.sh --dry-run   # audit + show what would be staged
+healthy-backup.sh --verify    # verify all archives in backupRoot
+healthy-backup.sh --verify /path/to/archive.tgz.gpg   # verify single file
+```

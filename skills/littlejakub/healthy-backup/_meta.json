@@ -3,9 +3,15 @@
   "slug": "healthy-backup",
   "displayName": "Healthy Backup",
   "latest": {
-    "version": "1.2.3",
-    "publishedAt": 1772894956834,
-    "commit": "https://github.com/openclaw/skills/commit/32427be09581da5c44b7c2124b58c71de69f4dd9"
+    "version": "1.2.5",
+    "publishedAt": 1773051815691,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.3",
+      "publishedAt": 1772894956834,
+      "commit": "https://github.com/openclaw/skills/commit/32427be09581da5c44b7c2124b58c71de69f4dd9"
+    }
+  ]
 }

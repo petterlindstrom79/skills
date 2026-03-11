@@ -1,12 +1,12 @@
 ---
 name: healthy-backup
-version: 1.2.3
+version: 1.3.0
 description: Health-gated backup for OpenClaw rigs. Audits first — only backs up if healthy. Three tiers, 5-backup retention, optional rclone sync. Sensitive config values scrubbed before staging. Linux/cron native.
 metadata: {"openclaw":{"emoji":"🩺","requires":{"bins":["tar","gpg","jq","rsync"]}}}
 ---
 
 # Healthy Backup
-Version: 1.2.3
+Version: 1.3.0
 
 **A health-first backup skill for OpenClaw.**
 
@@ -102,7 +102,18 @@ Even when `collectCrontab` is enabled, any `VAR=VALUE` patterns in cron lines ar
 
 ## Setup
 
-### 1. System dependencies
+### 1. Run the setup wizard
+
+```bash
+chmod +x setup.sh healthy-backup.sh verify-backup.sh
+bash setup.sh
+```
+
+The wizard will ask about tier, backup location, retention, cloud sync, and optional collectors. It writes config to `~/.openclaw/config/healthy-backup/hb-config.json`, creates your encryption key file if needed, runs a dry-run automatically, and optionally installs the cron job — all in one flow.
+
+To reconfigure at any time, just run `bash setup.sh` again.
+
+### 2. System dependencies
 
 ```bash
 sudo apt install tar gpg jq rsync        # Debian/Ubuntu
@@ -294,15 +305,16 @@ MIT
 
 ---
 
-## Release checksums (v1.2.3)
+## Release checksums (v1.3.0)
 
 Verify your downloaded files match these SHA256 hashes before running:
 
 ```
-4c7f8b9d86bd3e3ce67c541f0e68cc0c5a1b65e3bc9bd31da123d2540e3b0045  healthy-backup.sh
+a8e0f8e922c05755a43a8bb156a327984d9fbc50a620ce08e172a48d72f79a39  healthy-backup.sh
 ae0bda0195e408aee84f441a39494995f8cd1eb5578eba07d0870810d6ad1433  verify-backup.sh
+185fa27b052ed1c9d294f4d40a7700a501683906b0d6d2e75ab059532decbd4f  setup.sh
 ```
 
 ```bash
-sha256sum healthy-backup.sh verify-backup.sh
+sha256sum healthy-backup.sh verify-backup.sh setup.sh
 ```
