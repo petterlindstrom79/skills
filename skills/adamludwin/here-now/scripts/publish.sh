@@ -338,7 +338,9 @@ echo "publish_result.persistence=$PERSISTENCE" >&2
 echo "publish_result.expires_at=$RESPONSE_EXPIRES" >&2
 echo "publish_result.claim_url=$SAFE_CLAIM_URL" >&2
 
-if [[ "$AUTH_MODE" == "anonymous" ]]; then
+if [[ "$AUTH_MODE" == "authenticated" ]]; then
+  echo "authenticated publish (permanent, saved to your account)" >&2
+else
   echo "anonymous publish (expires in 24h)" >&2
   if [[ -n "$SAFE_CLAIM_URL" ]]; then
     echo "claim URL: $SAFE_CLAIM_URL" >&2
