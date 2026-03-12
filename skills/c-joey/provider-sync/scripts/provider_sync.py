@@ -2,9 +2,12 @@
 import argparse
 import copy
 import datetime as dt
+import hashlib
 import json
 import os
+from pathlib import Path
 import sys
+import time
 import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Tuple
@@ -91,7 +94,7 @@ def append_unique(target: Any, incoming: Any) -> Any:
     return out
 
 
-def fetch_json(endpoint: str, method: str, headers: Dict[str, str], body: Any) -> Any:
+def fetch_json_raw(endpoint: str, method: str, headers: Dict[str, str], body: Any, timeout: int = 30) -> Tuple[Any, Dict[str, Any]]:
     data = None
     if body is not None:
         data = json.dumps(body).encode("utf-8")
@@ -100,9 +103,16 @@ def fetch_json(endpoint: str, method: str, headers: Dict[str, str], body: Any) -
     for k, v in headers.items():
         req.add_header(k, v)
 
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        raw = resp.read().decode("utf-8")
-        return json.loads(raw)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw_bytes = resp.read()
+        raw = raw_bytes.decode("utf-8")
+        meta = {
+            "status": getattr(resp, "status", None),
+            "etag": resp.headers.get("ETag") if getattr(resp, "headers", None) else None,
+            "lastModified": resp.headers.get("Last-Modified") if getattr(resp, "headers", None) else None,
+            "bytes": len(raw_bytes),
+        }
+        return json.loads(raw), meta
 
 
 def parse_headers(pairs: List[str]) -> Dict[str, str]:
@@ -113,6 +123,213 @@ def parse_headers(pairs: List[str]) -> Dict[str, str]:
         k, v = p.split(":", 1)
         out[k.strip()] = v.strip()
     return out
+
+
+def get_header_case_insensitive(headers: Dict[str, str], key: str) -> str:
+    want = key.strip().lower()
+    for k, v in headers.items():
+        if k.strip().lower() == want:
+            return v
+    return ""
+
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256((text or "").encode("utf-8")).hexdigest()
+
+
+def _safe_cache_key(endpoint: str, method: str, headers: Dict[str, str], body: Any) -> str:
+    # NOTE: This hashes header VALUES too (including Authorization) but never stores them.
+    # This avoids cross-key cache confusion without leaking secrets.
+    headers_items = sorted((str(k), str(v)) for k, v in (headers or {}).items())
+    headers_hash = _sha256_text(json.dumps(headers_items, ensure_ascii=False))
+    body_hash = _sha256_text(canonical_json(body) if body is not None else "")
+    base = f"{method.upper()} {endpoint} h={headers_hash} b={body_hash}"
+    return _sha256_text(base)
+
+
+def _cache_paths(cache_dir: str, cache_key: str) -> Tuple[Path, Path]:
+    d = Path(os.path.expanduser(cache_dir or "~/.cache/openclaw/provider-sync"))
+    return d / f"{cache_key}.meta.json", d / f"{cache_key}.data.json"
+
+
+def fetch_json_with_meta(
+    endpoint: str,
+    method: str,
+    headers: Dict[str, str],
+    body: Any,
+    *,
+    timeout: int = 30,
+    cache_enabled: bool = True,
+    cache_dir: str = "~/.cache/openclaw/provider-sync",
+    cache_ttl_seconds: int = 600,
+    allow_stale_cache: bool = False,
+) -> Tuple[Any, Dict[str, Any]]:
+    # Fetch JSON with a small local cache (TTL + conditional requests).
+    # - Uses ETag/Last-Modified when available to avoid re-downloading
+    # - Never stores Authorization or other headers; only a hash is used for the cache key
+
+    t0 = time.time()
+    cache_key = _safe_cache_key(endpoint, method, headers, body)
+    meta_path, data_path = _cache_paths(cache_dir, cache_key)
+
+    def read_cache():
+        if not (meta_path.exists() and data_path.exists()):
+            return None, None
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            data = json.loads(data_path.read_text(encoding="utf-8"))
+            return meta, data
+        except Exception:
+            return None, None
+
+    def write_cache(meta: Dict[str, Any], data: Any):
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        data_path.write_text(json.dumps(data, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    cache_meta, cache_data = (None, None)
+    if cache_enabled:
+        cache_meta, cache_data = read_cache()
+        if cache_meta and cache_data is not None:
+            age = max(0, int(time.time() - int(cache_meta.get("ts") or 0)))
+            if cache_ttl_seconds > 0 and age <= int(cache_ttl_seconds):
+                return cache_data, {
+                    "endpoint": endpoint,
+                    "method": method.upper(),
+                    "status": cache_meta.get("status"),
+                    "cache": {
+                        "enabled": True,
+                        "hit": True,
+                        "fresh": True,
+                        "ageSeconds": age,
+                        "ttlSeconds": int(cache_ttl_seconds),
+                        "notModified": False,
+                        "staleFallback": False,
+                    },
+                    "timing": {"fetchMs": int((time.time() - t0) * 1000)},
+                }
+
+    # Conditional headers if we have cache
+    req_headers = dict(headers or {})
+    if cache_enabled and cache_meta:
+        etag = cache_meta.get("etag")
+        last_mod = cache_meta.get("lastModified")
+        if etag and not get_header_case_insensitive(req_headers, "If-None-Match"):
+            req_headers["If-None-Match"] = str(etag)
+        if last_mod and not get_header_case_insensitive(req_headers, "If-Modified-Since"):
+            req_headers["If-Modified-Since"] = str(last_mod)
+
+    try:
+        data, meta = fetch_json_raw(endpoint, method, req_headers, body, timeout=timeout)
+        out_meta = {
+            "endpoint": endpoint,
+            "method": method.upper(),
+            "status": meta.get("status"),
+            "cache": {
+                "enabled": bool(cache_enabled),
+                "hit": False,
+                "fresh": False,
+                "ageSeconds": None,
+                "ttlSeconds": int(cache_ttl_seconds),
+                "notModified": False,
+                "staleFallback": False,
+            },
+            "timing": {"fetchMs": int((time.time() - t0) * 1000)},
+        }
+        if cache_enabled:
+            write_cache(
+                {
+                    "ts": int(time.time()),
+                    "endpoint": endpoint,
+                    "method": method.upper(),
+                    "status": meta.get("status"),
+                    "etag": meta.get("etag"),
+                    "lastModified": meta.get("lastModified"),
+                },
+                data,
+            )
+        return data, out_meta
+
+    except urllib.error.HTTPError as e:
+        # 304 Not Modified: reuse cached payload
+        if e.code == 304 and cache_enabled and cache_data is not None:
+            try:
+                cache_meta = cache_meta or {}
+                cache_meta["ts"] = int(time.time())
+                meta_path.parent.mkdir(parents=True, exist_ok=True)
+                meta_path.write_text(json.dumps(cache_meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            except Exception:
+                pass
+
+            age = max(0, int(time.time() - int(cache_meta.get("ts") or 0))) if cache_meta else None
+            return cache_data, {
+                "endpoint": endpoint,
+                "method": method.upper(),
+                "status": 304,
+                "cache": {
+                    "enabled": True,
+                    "hit": True,
+                    "fresh": True,
+                    "ageSeconds": age,
+                    "ttlSeconds": int(cache_ttl_seconds),
+                    "notModified": True,
+                    "staleFallback": False,
+                },
+                "timing": {"fetchMs": int((time.time() - t0) * 1000)},
+            }
+        raise
+
+    except Exception as e:
+        # Network failure: optionally fall back to stale cache for dry-run/check-only UX
+        if allow_stale_cache and cache_enabled and cache_data is not None:
+            age = max(0, int(time.time() - int(cache_meta.get("ts") or 0))) if cache_meta else None
+            return cache_data, {
+                "endpoint": endpoint,
+                "method": method.upper(),
+                "status": None,
+                "cache": {
+                    "enabled": True,
+                    "hit": True,
+                    "fresh": False,
+                    "ageSeconds": age,
+                    "ttlSeconds": int(cache_ttl_seconds),
+                    "notModified": False,
+                    "staleFallback": True,
+                    "error": str(e)[:200],
+                },
+                "timing": {"fetchMs": int((time.time() - t0) * 1000)},
+            }
+        raise
+
+def resolve_endpoint_and_auth_headers(
+    cfg: Dict[str, Any], provider_root: str, provider_id: str, endpoint: str, headers: Dict[str, str]
+) -> Tuple[str, Dict[str, str]]:
+    """Resolve endpoint and Authorization header from config when possible.
+
+    - If endpoint is empty, derive it from models.providers.<provider-id>.baseUrl + '/models'
+    - If Authorization header is missing and apiKey exists, add 'Authorization: Bearer <apiKey>'
+
+    NOTE: Do not print apiKey.
+    """
+    provider_base = f"{provider_root}.{provider_id}"
+    provider_obj = get_path(cfg, provider_base) or {}
+
+    resolved_endpoint = (endpoint or "").strip()
+    if not resolved_endpoint:
+        base_url = (provider_obj.get("baseUrl") or "").strip()
+        if not base_url:
+            die(f"endpoint not provided and {provider_base}.baseUrl is missing")
+        resolved_endpoint = base_url.rstrip("/") + "/models"
+
+    # auth header
+    api_key = provider_obj.get("apiKey")
+    if isinstance(api_key, str) and api_key.strip():
+        if not get_header_case_insensitive(headers, "Authorization"):
+            headers = dict(headers)
+            headers["Authorization"] = f"Bearer {api_key.strip()}"
+
+    return resolved_endpoint, headers
 
 
 def resolve_dst_path(dst_path: str, provider_root: str, provider_id: str) -> str:
@@ -446,12 +663,31 @@ def build_summary(
     check_only: bool,
     preserve_existing_model_fields: bool,
     normalize_profile: str,
+    fetch: Dict[str, Any] = None,
+    timing: Dict[str, Any] = None,
     model_delta: Dict[str, Any] = None,
     backup: str = None,
     updated: str = None,
+    include_models: bool = False,
+    provider_base: str = "",
 ) -> Dict[str, Any]:
+    # change classification (helps downstream UX: decide whether restart is needed)
+    provider_changes = 0
+    alias_changes = 0
+    other_changes = 0
+    for c in changes or []:
+        to = str(c.get("to") or "")
+        if provider_base and to.startswith(provider_base):
+            provider_changes += 1
+        elif to.startswith("agents.defaults.models[") or to.startswith("agents.defaults.models"):
+            alias_changes += 1
+        else:
+            other_changes += 1
+
+    model_count = len(current_models) if isinstance(current_models, list) else 0
+
     model_summary = []
-    if isinstance(current_models, list):
+    if include_models and isinstance(current_models, list):
         for m in current_models:
             if not isinstance(m, dict):
                 continue
@@ -466,11 +702,18 @@ def build_summary(
             )
 
     return {
+        "fetch": fetch or {},
+        "timing": timing or {},
         "changed": bool(changes),
         "changeCount": len(changes),
         "changes": changes,
-        "models": model_summary,
-        "modelCount": len(model_summary),
+        "changeKinds": {
+            "providerSubtree": provider_changes,
+            "agentAliases": alias_changes,
+            "other": other_changes,
+        },
+        "models": model_summary if include_models else [],
+        "modelCount": model_count,
         "probeResults": probe_results,
         "recommendedProviderApi": picked_mode,
         "dryRun": dry_run,
@@ -484,12 +727,53 @@ def build_summary(
 
 
 def print_summary(summary: Dict[str, Any]):
+    # Helpful context for perceived speed / debugging
+    fetch = summary.get("fetch") or {}
+    timing = summary.get("timing") or {}
+    if fetch:
+        cache = fetch.get("cache") or {}
+        cache_bits = []
+        if cache.get("enabled"):
+            cache_bits.append("cache=on")
+            if cache.get("hit"):
+                cache_bits.append("hit")
+            if cache.get("notModified"):
+                cache_bits.append("304")
+            if cache.get("staleFallback"):
+                cache_bits.append("stale")
+            if cache.get("ttlSeconds") is not None:
+                cache_bits.append(f"ttl={cache.get('ttlSeconds')}s")
+            if cache.get("ageSeconds") is not None:
+                cache_bits.append(f"age={cache.get('ageSeconds')}s")
+        else:
+            cache_bits.append("cache=off")
+
+        fetch_ms = (fetch.get("timing") or {}).get("fetchMs")
+        print(
+            "Fetch: "
+            + str(fetch.get("endpoint") or "")
+            + f" (status={fetch.get('status')}, fetchMs={fetch_ms}, "
+            + ",".join(cache_bits)
+            + ")"
+        )
+
+    if timing and timing.get("totalMs") is not None:
+        print(f"Total: {timing.get('totalMs')}ms")
+
     changes = summary.get("changes") or []
     if not changes:
         print("No changes.")
         return
 
-    print(f"Planned changes: {summary.get('changeCount', len(changes))}")
+    kinds = summary.get("changeKinds") or {}
+    if kinds:
+        print(
+            "Planned changes: "
+            + str(summary.get("changeCount", len(changes)))
+            + f" (providerSubtree={kinds.get('providerSubtree', 0)}, agentAliases={kinds.get('agentAliases', 0)}, other={kinds.get('other', 0)})"
+        )
+    else:
+        print(f"Planned changes: {summary.get('changeCount', len(changes))}")
     change_rows = [[c.get("to", ""), c.get("from", ""), c.get("mode", "")] for c in changes]
     print_md_table(["target", "source", "mode"], change_rows)
 
@@ -570,8 +854,13 @@ def main():
     ap.add_argument("--config", default="/root/.openclaw/openclaw.json", help="openclaw.json path")
     ap.add_argument("--provider-root", default="models.providers", help="provider map path in config")
     ap.add_argument("--provider-id", required=True, help="provider id in openclaw.json")
-    ap.add_argument("--endpoint", required=True, help="upstream API endpoint")
+    ap.add_argument("--use-provider-config", action="store_true", help="derive endpoint/auth from openclaw.json when possible")
+    ap.add_argument("--endpoint", default="", help="upstream API endpoint (optional with --use-provider-config)")
     ap.add_argument("--method", default="GET", choices=["GET", "POST", "PUT", "PATCH"])
+    ap.add_argument("--timeout", type=int, default=30, help="HTTP timeout seconds for upstream fetch")
+    ap.add_argument("--cache-dir", default="~/.cache/openclaw/provider-sync", help="cache dir for upstream /models payload")
+    ap.add_argument("--cache-ttl-seconds", type=int, default=600, help="cache TTL seconds (default: 600)")
+    ap.add_argument("--no-cache", action="store_true", help="disable upstream cache")
     ap.add_argument("--header", action="append", default=[], help="HTTP header: Key:Value")
     ap.add_argument("--body-file", help="JSON file for request body")
     ap.add_argument("--response-root", default="", help="optional root path in response payload")
@@ -597,12 +886,28 @@ def main():
         action="store_false",
         help="do not sync agents.defaults.models aliases",
     )
+    ap.add_argument(
+        "--prune-agent-aliases",
+        dest="prune_agent_aliases",
+        action="store_true",
+        default=True,
+        help="prune agents.defaults.models entries for this provider to match <provider>.models (default: on)",
+    )
+    ap.add_argument(
+        "--no-prune-agent-aliases",
+        dest="prune_agent_aliases",
+        action="store_false",
+        help="disable pruning of agents.defaults.models for this provider",
+    )
     ap.add_argument("--include-model", action="append", default=[], help="only include these model ids (repeatable or comma-separated)")
     ap.add_argument("--exclude-model", action="append", default=[], help="exclude these model ids (repeatable or comma-separated)")
+    ap.add_argument("--include-models", action="store_true", help="include compact per-model summary in JSON/markdown output")
     ap.add_argument("--output", default="markdown", choices=["markdown", "json"], help="summary output format")
     ap.add_argument("--check-only", action="store_true", help="validate fetch/mapping/probe flow and print summary without writing")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+
+    _t_total0 = time.time()
 
     if not os.path.exists(args.config):
         die(f"config not found: {args.config}")
@@ -622,9 +927,25 @@ def main():
     exclude_models = expand_list_args(args.exclude_model)
 
     headers = parse_headers(args.header)
+    # Resolve endpoint + Authorization header from config when requested (or when endpoint omitted).
+    if args.use_provider_config or not (args.endpoint or "").strip():
+        args.endpoint, headers = resolve_endpoint_and_auth_headers(
+            cfg, args.provider_root, args.provider_id, args.endpoint, headers
+        )
+
     body = load_json(args.body_file) if args.body_file else None
 
-    upstream = fetch_json(args.endpoint, args.method, headers, body)
+    upstream, fetch_meta = fetch_json_with_meta(
+        args.endpoint,
+        args.method,
+        headers,
+        body,
+        timeout=int(args.timeout),
+        cache_enabled=not bool(args.no_cache),
+        cache_dir=args.cache_dir,
+        cache_ttl_seconds=int(args.cache_ttl_seconds),
+        allow_stale_cache=bool(args.dry_run or args.check_only),
+    )
     source = get_path(upstream, args.response_root) if args.response_root else upstream
     if source is None:
         die("response-root resolved to null")
@@ -744,8 +1065,38 @@ def main():
                     existing["alias"] = mid
                     changes.append({"to": f"agents.defaults.models[{key}].alias", "from": "(sync-agent-aliases)", "mode": "replace"})
 
+    # Optional: prune agents.defaults.models for this provider to match the current provider model list.
+    # This makes `/models` and provider-scoped models stay consistent when using models.mode=replace.
+    if args.prune_agent_aliases:
+        provider_models = get_path(new_cfg, f"{provider_base}.models")
+        if isinstance(provider_models, list):
+            keep = set()
+            for model in provider_models:
+                if isinstance(model, dict) and model.get("id"):
+                    keep.add(f"{args.provider_id}/{model.get('id')}")
+
+            agents_obj = new_cfg.setdefault("agents", {})
+            defaults_obj = agents_obj.setdefault("defaults", {})
+            models_index = defaults_obj.setdefault("models", {})
+            if not isinstance(models_index, dict):
+                models_index = {}
+                defaults_obj["models"] = models_index
+
+            prefix = f"{args.provider_id}/"
+            removed = []
+            for k in list(models_index.keys()):
+                if isinstance(k, str) and k.startswith(prefix) and k not in keep:
+                    removed.append(k)
+                    del models_index[k]
+
+            for k in removed:
+                changes.append({"to": f"agents.defaults.models[{k}]", "from": "(prune-agent-aliases)", "mode": "delete"})
+
     current_models = get_path(new_cfg, f"{provider_base}.models")
     previous_models = get_path(cfg, f"{provider_base}.models")
+
+    _t_total_ms = int((time.time() - _t_total0) * 1000)
+
     model_delta = summarize_model_delta(previous_models, current_models)
     summary = build_summary(
         changes=changes,
@@ -756,11 +1107,19 @@ def main():
         check_only=args.check_only,
         preserve_existing_model_fields=args.preserve_existing_model_fields,
         normalize_profile=args.normalize_profile,
+        fetch=fetch_meta,
+        timing={"totalMs": _t_total_ms},
         model_delta=model_delta,
+        include_models=bool(args.include_models),
+        provider_base=provider_base,
     )
 
+    will_write = bool(changes) and (not args.dry_run) and (not args.check_only)
+
+    # For JSON output: if we are going to write, print only once AFTER writing (includes backup/updated).
     if args.output == "json":
-        print(json.dumps(summary, ensure_ascii=False, indent=2))
+        if not will_write:
+            print(json.dumps(summary, ensure_ascii=False, indent=2))
     else:
         print_summary(summary)
 
