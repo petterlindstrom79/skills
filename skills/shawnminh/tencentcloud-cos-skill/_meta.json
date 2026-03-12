@@ -3,11 +3,16 @@
   "slug": "tencentcloud-cos-skill",
   "displayName": "Tencent Cloud COS",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1772789727948,
-    "commit": "https://github.com/openclaw/skills/commit/ca9929dd94442f00e1f9362f23ebb47680d5505e"
+    "version": "1.0.8",
+    "publishedAt": 1773113485259,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1772789727948,
+      "commit": "https://github.com/openclaw/skills/commit/ca9929dd94442f00e1f9362f23ebb47680d5505e"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1772277951421,

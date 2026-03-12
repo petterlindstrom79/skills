@@ -1,26 +1,10 @@
 {
   "_description": "cos-mcp MCP 服务器配置模板，添加到客户端的 MCP 配置文件中",
+  "_security_note": "⚠️ 凭证（SecretId/SecretKey）为敏感信息，持久化存储增加暴露风险。通过 env 字段传递，不在 args 中暴露（args 会出现在进程列表中）。配置文件应设置 chmod 600 权限。强烈建议使用子账号最小权限密钥，严禁使用主账号密钥。不再使用时请删除此文件。",
 
   "mcpServers": {
     "cos-mcp": {
-      "_comment": "方式一：参数直接传入 args",
-      "command": "npx",
-      "args": [
-        "cos-mcp",
-        "--Region=<替换为存储桶区域，如 ap-guangzhou>",
-        "--Bucket=<替换为存储桶名称，格式 name-appid>",
-        "--SecretId=<替换为腾讯云 API 密钥 ID>",
-        "--SecretKey=<替换为腾讯云 API 密钥 Key>",
-        "--DatasetName=<替换为数据万象数据集名称，无则删除此行>",
-        "--Domain=<替换为自定义域名，无则删除此行>",
-        "--ServiceDomain=<替换为自定义服务域名，无则删除此行>",
-        "--Protocol=<替换为协议，如 https，无则删除此行>",
-        "--connectType=stdio"
-      ]
-    },
-
-    "cos-mcp-env": {
-      "_comment": "方式二：通过 env 传递敏感参数（推荐）",
+      "_comment": "✅ stdio 模式（推荐 — 凭证通过 env 传递，不暴露在进程列表中）",
       "command": "npx",
       "args": [
         "cos-mcp",
@@ -39,7 +23,7 @@
     },
 
     "cos-mcp-sse": {
-      "_comment": "方式三：SSE 模式（适合高频调用场景）",
+      "_comment": "SSE 模式（适合高频调用场景 — 凭证通过 env 传递）",
       "command": "npx",
       "args": [
         "cos-mcp",
