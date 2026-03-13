@@ -1,53 +1,61 @@
 ---
 name: upcoming-metal-concerts
-description: Search for upcoming metal concerts and festivals by country, city, or band using concerts-metal.com. Use when the user asks about upcoming metal shows, gigs, or festivals.
+description: Collect upcoming metal concerts and festivals by country using concerts-metal.com. Use when the user asks about upcoming metal shows, gigs, or festivals.
 metadata: {"openclaw":{"emoji":"🤘","requires":{"bins":["python3"]}}}
 ---
 
 # Upcoming Metal Concerts
 
-Search for upcoming metal concerts and festivals worldwide via concerts-metal.com.
+Collect upcoming metal concerts and festivals worldwide via concerts-metal.com.
+
+## First run
+
+On first run, `skill-config.json` is created with default settings. **The default country is Spain (ES).** Tell the user this and ask them which country they'd like to use. To see all supported country codes, run:
+
+```bash
+python3 {baseDir}/scripts/events.py --list-countries
+```
+
+Then update `country` in `{baseDir}/skill-config.json` to the user's chosen code before collecting.
 
 ## Usage
 
-```bash
-python3 {baseDir}/events.py --country ES --city Valencia
-```
-
-## Command Options
-
-- `--country` (optional): ISO country code (default: ES). Use `--list-countries` to see all supported codes.
-- `--city` (optional): Filter by city name (case-insensitive, partial match)
-- `--band` (optional): Filter by band name (case-insensitive, partial match)
-- `--list-countries` (optional): Print supported country codes and exit
-
-## Examples
+Run the collector to scrape and accumulate concert data into `data/concerts.json`:
 
 ```bash
-# All upcoming metal concerts in Spain
-python3 {baseDir}/events.py --country ES
-
-# Metal shows in Valencia
-python3 {baseDir}/events.py --country ES --city Valencia
-
-# Find a specific band's shows in the UK
-python3 {baseDir}/events.py --country GB --band "Kreator"
-
-# List supported countries
-python3 {baseDir}/events.py --list-countries
+python3 {baseDir}/scripts/events.py
 ```
 
-## Output
+The `--country` flag overrides the config for a single run without changing it:
 
-The script prints a JSON array to stdout. Each entry contains:
+```bash
+python3 {baseDir}/scripts/events.py --country DE
+```
 
-- `date`: Event date (YYYY-MM-DD)
-- `artists`: List of artist/band names
-- `venue`: Venue name
-- `city`: City name
-- `url`: Link to the event page on concerts-metal.com
+Re-running merges new concerts without duplicates and flags previously-seen future concerts that disappear from the source as potentially cancelled. Each record contains `date`, `artists`, `venue`, `city`, `url`, `discovered_at`, and `status` (`"active"` or `"cancelled"`).
 
-Present the results to the user as a readable table sorted by date.
+## Changing settings
+
+All settings live in `{baseDir}/skill-config.json`:
+
+```json
+{
+  "country": "ES",
+  "concert_days": 200
+}
+```
+
+| Key | What it does | How to change |
+|-----|-------------|---------------|
+| `country` | ISO country code to scrape. | Set to any code from `--list-countries` (e.g. `"DE"`, `"US"`, `"GB"`). |
+| `concert_days` | How many days ahead to look for concerts. | Set to any positive integer (e.g. `90` for ~3 months, `365` for a year). |
+
+When the user asks to change their country or lookahead window, edit the relevant key in `{baseDir}/skill-config.json` directly.
+
+## Data files
+
+All data lives in `data/` (gitignored):
+- `concerts.json` — accumulated concert records
 
 ## Notes
 
