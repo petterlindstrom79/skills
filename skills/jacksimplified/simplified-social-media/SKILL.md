@@ -1,7 +1,7 @@
 ---
 name: simplified-social
 description: Manage your entire social media from AI — post, schedule, and analyze across Facebook, Instagram, TikTok, YouTube, LinkedIn, Pinterest, Threads, Bluesky and Google Business
-version: 1.2.1
+version: 1.2.2
 homepage: https://simplified.com
 triggers:
   - social media
@@ -47,6 +47,30 @@ metadata:
 
 Schedule, queue, and draft social media posts, and retrieve analytics across 10 platforms using Simplified.com.
 
+## MCP Server
+
+This skill requires a connection to the Simplified Social Media MCP server at `https://mcp.simplified.com/social-media/mcp`.
+
+All tools (`getSocialMediaAccounts`, `createSocialMediaPost`, `getSocialMediaAnalyticsRange`, etc.) are provided by this remote MCP server — they are not built-in tools. You must configure the MCP server before using any functionality.
+
+**MCP server config** (add to `.mcp.json` or equivalent):
+
+```json
+{
+  "mcpServers": {
+    "simplified-social-media": {
+      "transport": "http",
+      "url": "https://mcp.simplified.com/social-media/mcp",
+      "headers": {
+        "Authorization": "Api-Key ${SIMPLIFIED_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+> For Claude Code specifically, use `"type": "http"` instead of `"transport": "http"`.
+
 ## IMPORTANT: Before Any Operation
 
 **Always check if `SIMPLIFIED_API_KEY` is configured before attempting any tool calls.**
@@ -79,6 +103,8 @@ If the user tries to use any social media feature and the API key is missing or 
    ```bash
    export SIMPLIFIED_API_KEY="your-api-key"
    ```
+5. Configure the MCP server — see the **MCP Server** section above for the config block
+6. Restart your AI tool to load the MCP server
 
 ## Core Workflow
 

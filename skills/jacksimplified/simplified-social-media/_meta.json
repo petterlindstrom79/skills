@@ -3,9 +3,15 @@
   "slug": "simplified-social-media",
   "displayName": "Simplified Social Media",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1773138924736,
-    "commit": "https://github.com/openclaw/skills/commit/6b7d7b4218b40ecaba56d5d2f7e81af5641f1d4a"
+    "version": "1.2.2",
+    "publishedAt": 1773230914857,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1773138924736,
+      "commit": "https://github.com/openclaw/skills/commit/6b7d7b4218b40ecaba56d5d2f7e81af5641f1d4a"
+    }
+  ]
 }
