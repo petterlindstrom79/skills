@@ -148,10 +148,31 @@ class WeChatSkillClient:
                 print("⚠️  默认封面上传失败，草稿可能创建失败")
 
         # 构建文章数据
+        import re
+        
+        # 标题：支持 emoji，最大 64 字符
+        title = article['title']
+        # 移除微信可能不兼容的特殊字符（保留 emoji 和中文）
+        title = re.sub(r'[\x00-\x1f\x7f]', '', title)  # 移除控制字符
+        if len(title) > 64:
+            title = title[:64]
+        
+        # author 最长 8 字节（中文算 3 字节），安全起见限制 4 个中文字符
+        author = (article.get('author', '') or '')[:4]
+        
+        # 摘要：支持 emoji，最大 120 字符
+        digest = self._generate_digest(article.get('content', ''), max_length=120)
+        # 移除 HTML 标签和控制字符，保留 emoji 和中文
+        digest = re.sub(r'<[^>]+>', '', digest)
+        digest = re.sub(r'[\n\r\t\x00-\x1f\x7f]', ' ', digest)
+        digest = digest.strip()
+        if len(digest) > 120:
+            digest = digest[:120]
+
         articles = [{
-            'title': article['title'],
-            'author': article.get('author', '')[:8],  # 微信 author 字段最长 8 字符
-            'digest': self._generate_digest(article.get('content', '')),
+            'title': title,
+            'author': author,
+            'digest': digest,
             'content': article['content'],
             'content_source_url': article.get('original_link', ''),
             'thumb_media_id': cover_media_id or '',
@@ -159,14 +180,36 @@ class WeChatSkillClient:
             'only_fans_can_comment': 0,
             'show_cover_pic': 1 if cover_media_id else 0
         }]
+        
+        print(f"[DEBUG] 提交标题：{title} (长度:{len(title)})")
+        print(f"[DEBUG] 提交作者：{author}")
+        print(f"[DEBUG] 提交摘要：{digest} (长度:{len(digest)})")
 
         try:
-            result = self.client.draft.add(articles)
-            media_id = result['media_id']
-            print(f"✅ 草稿创建成功，media_id：{media_id}")
-            return media_id
-        except WeChatClientException as e:
-            print(f"❌ 创建草稿失败：{e}")
+            # wechatpy 不直接支持 draft API，使用原始 HTTP 调用
+            import requests
+            import json
+            url = f"https://api.weixin.qq.com/cgi-bin/draft/add?access_token={self.client.access_token}"
+            payload = {
+                'articles': articles
+            }
+            # 显式使用 UTF-8 编码发送 JSON
+            resp = requests.post(
+                url, 
+                data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+                headers={'Content-Type': 'application/json; charset=utf-8'}
+            )
+            result = resp.json()
+            
+            if 'media_id' in result:
+                media_id = result['media_id']
+                print(f"✅ 草稿创建成功，media_id：{media_id}")
+                return media_id
+            else:
+                print(f"❌ 创建草稿失败：{result}")
+                return None
+        except Exception as e:
+            print(f"❌ 创建草稿异常：{e}")
             return None
 
     @staticmethod

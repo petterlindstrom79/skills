@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 md2wechat — Markdown 转微信公众号草稿箱一键工具
 
@@ -36,7 +36,7 @@ def load_env(env_file: str = None):
         try:
             from dotenv import load_dotenv
             load_dotenv(env_file)
-            print(f"📋 已加载配置文件: {env_file}")
+            print(f"[INFO] 已加载配置文件: {env_file}")
         except ImportError:
             # 手动解析简单 .env 文件
             with open(env_file, 'r', encoding='utf-8') as f:
@@ -45,7 +45,7 @@ def load_env(env_file: str = None):
                     if line and not line.startswith('#') and '=' in line:
                         key, _, value = line.partition('=')
                         os.environ[key.strip()] = value.strip()
-            print(f"📋 已加载配置文件: {env_file}")
+            print(f"[INFO] 已加载配置文件: {env_file}")
 
 
 def main():
@@ -81,23 +81,23 @@ def main():
     # 验证输入文件
     md_path = Path(args.md_file).resolve()
     if not md_path.exists():
-        print(f"❌ 文件不存在: {md_path}")
+        print(f"[ERROR] 文件不存在: {md_path}")
         sys.exit(1)
     if md_path.suffix.lower() != '.md':
-        print(f"⚠️ 警告: 文件不是 .md 格式: {md_path.suffix}")
+        print(f"[WARN] 警告: 文件不是 .md 格式: {md_path.suffix}")
 
     # 加载环境变量
     if args.env_file:
         load_env(args.env_file)
 
-    print(f"\n📄 正在处理: {md_path.name}")
+    print(f"\n[FILE] 正在处理: {md_path.name}")
     print("=" * 50)
 
     # ── convert-only 模式 ──
     if args.convert_only:
         result = MarkdownConverter.convert_file(str(md_path))
         if not result:
-            print("❌ 转换失败")
+            print("[ERROR] 转换失败")
             sys.exit(1)
 
         # 覆盖标题和作者
@@ -125,13 +125,13 @@ def main():
                 f"</div>\n</body>\n</html>"
             )
             output_path.write_text(preview_html, encoding='utf-8')
-            print(f"\n✅ 转换成功！已保存到: {output_path}")
+            print(f"\n[OK] 转换成功！已保存到: {output_path}")
         else:
             # 输出到 stdout
-            print(f"\n✅ 转换成功！")
-            print(f"📌 标题: {result['title']}")
-            print(f"📝 摘要: {result['summary']}")
-            print(f"📏 内容长度: {len(result['content'])} 字符")
+            print(f"\n[OK] 转换成功！")
+            print(f"[TITLE] 标题: {result['title']}")
+            print(f"[DRAFT] 摘要: {result['summary']}")
+            print(f"[LENGTH] 内容长度: {len(result['content'])} 字符")
             print(f"\n{'─' * 50}")
             print(result['content'])
 
@@ -143,7 +143,7 @@ def main():
             'content_length': len(result['content']),
             'publish_mode': result.get('publish_mode', 'draft'),
         }
-        print(f"\n📋 元数据 (JSON):")
+        print(f"\n[INFO] 元数据 (JSON):")
         print(json.dumps(meta_json, ensure_ascii=False, indent=2))
         sys.exit(0)
 
@@ -153,7 +153,7 @@ def main():
     secret = os.environ.get('WECHAT_SECRET')
 
     if not appid or not secret:
-        print("❌ 缺少微信公众号配置！")
+        print("[ERROR] 缺少微信公众号配置！")
         print("   请通过以下方式之一设置：")
         print("   1. 设置环境变量 WECHAT_APPID 和 WECHAT_SECRET")
         print("   2. 使用 --env-file 参数指定 .env 配置文件")
@@ -166,13 +166,13 @@ def main():
     try:
         client = WeChatSkillClient(appid=appid, secret=secret)
     except Exception as e:
-        print(f"❌ 初始化微信客户端失败: {e}")
+        print(f"[ERROR] 初始化微信客户端失败: {e}")
         sys.exit(1)
 
     # 转换 Markdown（同时传入 publisher 以处理正文内嵌图片）
     result = MarkdownConverter.convert_file(str(md_path), publisher=client)
     if not result:
-        print("❌ 转换失败")
+        print("[ERROR] 转换失败")
         sys.exit(1)
 
     if args.title:
@@ -180,30 +180,30 @@ def main():
     if args.author:
         result['author'] = args.author
 
-    print(f"\n📌 标题: {result['title']}")
-    print(f"📝 摘要: {result['summary']}")
-    print(f"📏 内容长度: {len(result['content'])} 字符")
+    print(f"\n[TITLE] 标题: {result['title']}")
+    print(f"[DRAFT] 摘要: {result['summary']}")
+    print(f"[LENGTH] 内容长度: {len(result['content'])} 字符")
 
     # 上传封面图（如果指定）
     cover_media_id = None
     if args.cover:
         cover_path = Path(args.cover).resolve()
         if cover_path.exists():
-            print(f"\n🖼️  正在上传封面图: {cover_path.name}")
+            print(f"\n[IMAGE]  正在上传封面图: {cover_path.name}")
             cover_media_id = client.upload_image(str(cover_path))
         else:
-            print(f"⚠️ 封面图文件不存在: {args.cover}")
+            print(f"[WARN] 封面图文件不存在: {args.cover}")
 
     # 创建草稿
-    print(f"\n📤 正在上传到微信草稿箱...")
+    print(f"\n[UPLOAD] 正在上传到微信草稿箱...")
     draft_media_id = client.create_draft(result, cover_media_id=cover_media_id)
 
     if draft_media_id:
-        print(f"\n🎉 发布完成！")
+        print(f"\n[SUCCESS] 发布完成！")
         print(f"   草稿 media_id: {draft_media_id}")
         print(f"   请登录微信公众平台查看草稿箱")
     else:
-        print(f"\n❌ 上传到草稿箱失败")
+        print(f"\n[ERROR] 上传到草稿箱失败")
         sys.exit(1)
 
     # 保存预览（如果指定了输出路径）

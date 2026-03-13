@@ -3,9 +3,15 @@
   "slug": "md2wechat-skill",
   "displayName": "md2WeChat-python",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773235355877,
-    "commit": "https://github.com/openclaw/skills/commit/6bae64c691dc16a34686862f3c90a12cf56b99c3"
+    "version": "2.0.0",
+    "publishedAt": 1773291964440,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773235355877,
+      "commit": "https://github.com/openclaw/skills/commit/6bae64c691dc16a34686862f3c90a12cf56b99c3"
+    }
+  ]
 }

@@ -1,6 +1,20 @@
 ---
 name: md2wechat-skill
+version: 1.0.2
 description: 将 Markdown 文件转换为微信公众号兼容的内联样式 HTML，并一键发送到微信草稿箱。支持 Front Matter 元数据、表格、代码块、列表、图片自动上传等完整排版能力。
+metadata:
+  openclaw:
+    primaryEnv: WECHAT_APPID
+    requires:
+      bins:
+        - python3
+      env:
+        - WECHAT_APPID
+        - WECHAT_SECRET
+    permissions:
+      declared_purpose: "将 Markdown 转换为微信兼容 HTML，可选上传到微信公众号草稿箱。写操作包括：保存本地预览 HTML、生成临时封面图到系统 temp 目录"
+      network: true
+      filesystem: read-write
 ---
 
 # md2wechat-skill — Markdown 转微信草稿箱
