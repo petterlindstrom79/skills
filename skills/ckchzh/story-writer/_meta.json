@@ -1,11 +1,17 @@
 {
   "owner": "ckchzh",
   "slug": "story-writer",
-  "displayName": "story-writer",
+  "displayName": "Story Writer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773206291176,
-    "commit": "https://github.com/openclaw/skills/commit/b98226003ee9c8eb1a4b88c1e6213c929f0635fb"
+    "version": "2.2.0",
+    "publishedAt": 1773421847299,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773206291176,
+      "commit": "https://github.com/openclaw/skills/commit/b98226003ee9c8eb1a4b88c1e6213c929f0635fb"
+    }
+  ]
 }
