@@ -7,12 +7,29 @@ metadata:
   openclaw:
     emoji: "📈"
     homepage: https://github.com/stockvaluation-io/stockvaluation_io
+    primaryEnv: CURRENCY_API_KEY
     requires:
       bins:
         - git
       anyBins:
         - docker
         - docker-compose
+      env:
+        - CURRENCY_API_KEY
+        - POSTGRES_PASSWORD
+        - DEFAULT_PASSWORD
+        - YFINANCE_SECRET_KEY
+        - VALUATION_AGENT_SECRET_KEY
+        - BULLBEARGPT_SECRET_KEY
+        - VALUATION_SERVICE_JWT_SECRET
+        - ANTHROPIC_API_KEY
+        - OPENAI_API_KEY
+        - GROQ_API_KEY
+        - GEMINI_API_KEY
+        - OPENROUTER_API_KEY
+        - TAVILY_API_KEY
+        - DUMP_PROMPTS
+        - PROMPT_DUMP_DIR
 ---
 
 # StockValuation.io
@@ -34,6 +51,7 @@ Use this skill when the user wants help with StockValuation.io setup, local DCF 
 - If the user wants the installer, tell them to download or inspect `install.sh` locally before running it instead of recommending `curl | bash`.
 - Never ask the user to paste real API keys into chat. Tell them to set keys in their local environment or `.env`.
 - Never print `.env` contents, echo live secrets, or suggest committing local secret files.
+- Treat prompt dumping as privacy-sensitive. When `DUMP_PROMPTS=true`, prompt contents are written to `PROMPT_DUMP_DIR` on disk.
 - Treat container teardown and volume deletion as destructive. Only suggest `down -v` when the user explicitly asks to reset local state.
 - When only LLM settings change, restart `valuation-agent` and `bullbeargpt` unless the user also changed other infrastructure.
 - When comparing experiments, keep the ticker, env changes, and output differences explicit so the comparison stays attributable.

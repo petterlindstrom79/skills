@@ -34,8 +34,8 @@ Do not recommend `curl | bash` as the default path.
 Prerequisites:
 
 - Docker with Compose
-- `CURRENCY_API_KEY`
-- At least one LLM provider key if the user wants research or narrative features
+- Required local env vars in `.env`: `CURRENCY_API_KEY`, `POSTGRES_PASSWORD`, `DEFAULT_PASSWORD`, `YFINANCE_SECRET_KEY`, `VALUATION_AGENT_SECRET_KEY`, `BULLBEARGPT_SECRET_KEY`, and `VALUATION_SERVICE_JWT_SECRET`
+- At least one provider API key if the user wants research or narrative features
 
 Then edit `.env` and fill required values. The main required secrets are usually:
 
@@ -46,6 +46,12 @@ Then edit `.env` and fill required values. The main required secrets are usually
 - `VALUATION_AGENT_SECRET_KEY`
 - `BULLBEARGPT_SECRET_KEY`
 - `VALUATION_SERVICE_JWT_SECRET`
+
+Optional env vars for fuller workflows:
+
+- One provider key that matches the chosen model backend: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, or `OPENROUTER_API_KEY`
+- `TAVILY_API_KEY` for live research
+- `DUMP_PROMPTS` and `PROMPT_DUMP_DIR` only when intentionally writing prompt dumps to disk for inspection
 
 ## Verify The Stack
 

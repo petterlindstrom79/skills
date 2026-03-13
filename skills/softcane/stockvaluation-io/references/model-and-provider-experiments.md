@@ -16,6 +16,7 @@ PROMPT_DUMP_DIR=
 ```
 
 The exact provider resolution logic lives in `shared/llm_models.py` when the repo is available.
+Provider API keys come from `.env.example`: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, and `OPENROUTER_API_KEY`.
 
 ## Common Experiment Patterns
 
@@ -56,6 +57,7 @@ PROMPT_DUMP_DIR=./local_data/prompts
 ```
 
 After a run, inspect the dump directory and compare prompts across experiments.
+This is opt-in and privacy-sensitive: the dump directory can contain full prompt text, ticker context, and retrieved research snippets, so do not enable it for sensitive work and clean it up after comparisons if needed.
 
 ## Restart Scope
 

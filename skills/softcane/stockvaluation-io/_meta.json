@@ -1,11 +1,17 @@
 {
   "owner": "softcane",
   "slug": "stockvaluation-io",
-  "displayName": "StockValuation.io",
+  "displayName": "Stock Valuation using Aswath Damodaran methodologies",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773176470920,
-    "commit": "https://github.com/openclaw/skills/commit/af0d90d37941c28e9e279aab8ee5a73397ee1839"
+    "version": "1.0.5",
+    "publishedAt": 1773352578837,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773176470920,
+      "commit": "https://github.com/openclaw/skills/commit/af0d90d37941c28e9e279aab8ee5a73397ee1839"
+    }
+  ]
 }
