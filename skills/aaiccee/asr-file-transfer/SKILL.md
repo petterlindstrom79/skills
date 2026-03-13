@@ -1,4 +1,4 @@
-name: asr-file-transfer
+name: u2-audio-file-transcriber
 description: "Transcribe audio files via UniCloud ASR (云知声语音识别, recorded audio → text) API from UniSound. Supports multiple formats, optimized for finance, customer service, and other domains. 调用云知声语音识别服务转写音频文件，支持多种音频格式，适用于金融、客服等场景。Use when the user needs to transcribe recorded audio files, or asks for UniSound/云知声 audio file transcription. Do NOT use for real-time/streaming speech recognition, text-to-speech (TTS), or live captioning. 不适用于实时语音识别、语音合成(TTS)或直播字幕。"
 
 ---

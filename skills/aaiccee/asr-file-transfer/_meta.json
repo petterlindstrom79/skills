@@ -1,11 +1,17 @@
 {
   "owner": "aaiccee",
   "slug": "asr-file-transfer",
-  "displayName": "uisound-asr-transfer",
+  "displayName": "asr-file-transfer",
   "latest": {
-    "version": "3.0.4",
-    "publishedAt": 1773236649954,
-    "commit": "https://github.com/openclaw/skills/commit/00d50d9aac82e75edeb0c42678b463ff47654958"
+    "version": "3.0.6",
+    "publishedAt": 1773287975344,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "3.0.4",
+      "publishedAt": 1773236649954,
+      "commit": "https://github.com/openclaw/skills/commit/00d50d9aac82e75edeb0c42678b463ff47654958"
+    }
+  ]
 }
