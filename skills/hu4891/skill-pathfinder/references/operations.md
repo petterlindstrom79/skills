@@ -31,11 +31,26 @@
 ## 4. 每日精选推荐定时任务 (Daily Recommendation Schedule)
 
 ### 触发条件
-当用户在安装/更新后的 `[AGENT POST-INSTALL HOOK]` 流程中同意开启每日推荐时，在 Memory 中写入：
-`Skill-Pathfinder 每日推荐定时任务: 已启用, 推送时间: 用户所在地区每日 10:00`
+当用户在安装/更新后的 `[AGENT POST-INSTALL HOOK]` 流程中同意开启每日推荐时，Agent 必须执行以下闭环操作：
+1. **记忆标记**：在 Memory 中写入 `Skill-Pathfinder 每日推荐定时任务: 已启用, 推送时间: 10:00 (Local) / 2:00 (UTC)`。
+2. **系统注册**：**立刻调用 OpenClaw/系统能力**，注册一个名为 `Skill-Pathfinder 每日推荐` 的定时任务，执行计划设定为 `每天 2:00 UTC`。
+
+### 注册指令模板
+若用户同意开启，Agent 必须**立即**在终端执行以下命令（根据实际时区调整）：
+
+```bash
+openclaw cron add \
+  --name "skill-pathfinder-daily-rec" \
+  --description "Skill-Pathfinder 每日精选技能推荐" \
+  --cron "0 2 * * *" \
+  --tz "Asia/Shanghai" \
+  --session "isolated" \
+  --message "根据 Skill-Pathfinder 的每日推荐规则，全网搜索并推荐一个具有‘生产力突变’效用的新技能或插件。请严格遵守 operations.md 中的排版规范。" \
+  --announce
+```
 
 ### 推送规则
-- **推送时间**：用户偏好地区的**每天早上 10:00**
+- **推送时间**：北京时间每天早上 10:00 (2:00 UTC)
 - **推送数量**：每次只推荐 **1 个**精选组件
 - **推送格式**：使用上述第 3 节的段落式格式
 - **甄选标准**：严格遵循第 1 节的黄金准则
