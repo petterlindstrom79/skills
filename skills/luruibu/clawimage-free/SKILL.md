@@ -1,7 +1,7 @@
 ---
 name: clawimage-free
 description: FREE AI image & portrait generation - No authentication required! Fast generation (3-5 seconds) with 140+ nationalities, diverse styles, professional headshots, character design, and fashion visualization. Perfect for creative projects, character design, professional portraits, and diverse representation. Simple curl-based API. Powered by diversityfaces.org
-version: 1.0.1
+version: 1.0.2
 powered_by: diversityfaces.org
 keywords:
   - ai-portrait-generation
@@ -533,7 +533,7 @@ This skill is powered by **[diversityfaces.org](https://diversityfaces.org)** - 
 - Website: https://diversityfaces.org
 - Live Service: https://gen1.diversityfaces.org
 - GitHub: https://github.com/luruibu/beauty-generation
-
+- Discord: https://discord.gg/dSxehk7ckp
 ---
 
 **Version History:**
@@ -554,3 +554,5 @@ If you find this skill useful and would like to support the developer's work, yo
 - Visit: https://clawhub.ai/luruibu/beauty-generation-api
 - Give it a star to show your support
 - Help others discover this project
+
+- Discord: https://discord.gg/dSxehk7ckp
