@@ -3,11 +3,16 @@
   "slug": "krumpphysio",
   "displayName": "KrumpPhysio",
   "latest": {
-    "version": "1.0.10",
-    "publishedAt": 1772878922799,
-    "commit": "https://github.com/openclaw/skills/commit/1d22cad69d6fec92c1b5670c6d140fc9346d4c67"
+    "version": "1.0.11",
+    "publishedAt": 1773179487238,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.10",
+      "publishedAt": 1772878922799,
+      "commit": "https://github.com/openclaw/skills/commit/1d22cad69d6fec92c1b5670c6d140fc9346d4c67"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1772712753093,
