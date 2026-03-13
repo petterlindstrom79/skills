@@ -14,12 +14,14 @@ import time
 @dataclass
 class MeanReversionConfig:
     ticker: str = "BTC"
-    leverage: float = 2.0
+    leverage: float = 1.0               # Matches Rust engine default
     position_size_pct: float = 0.2      # 20% of equity per trade
-    lookback_candles: int = 96          # 4h high lookback (15min candles × 96 = 24h)
-    entry_drop_pct: float = 2.0         # Buy when price drops 2% from high
-    take_profit_pct: float = 1.5        # Take profit at +1.5%
-    stop_loss_pct: float = 3.0          # Stop loss at -3%
+    lookback_candles: int = 480         # 8h lookback (1min candles), matches Rust lookback_bars
+    entry_drop_pct: float = 4.0         # Buy when price drops 4% from high (Rust entry_threshold=0.04)
+    exit_threshold_pct: float = 3.0     # Exit at 3% recovery (Rust exit_threshold=0.03)
+    take_profit_pct: float = 8.0        # Take profit at 8% (Rust take_profit=0.08)
+    stop_loss_pct: float = 5.0          # Stop loss at 5% (Rust stop_loss=0.05)
+    cooldown_candles: int = 120         # 2h cooldown between trades (Rust cooldown_bars=120)
     max_open_positions: int = 1         # Max concurrent positions
 
 
@@ -66,7 +68,7 @@ class MeanReversionStrategy:
     Implement run_cycle() — called every 30s by the agent.
     """
 
-    def __init__(self, cfg: MeanReversionConfig | None = None):
+    def __init__(self, cfg=None):
         self.cfg = cfg or MeanReversionConfig()
         self.state = StrategyState()
 

@@ -12,11 +12,13 @@ from typing import Optional
 
 @dataclass
 class GridConfig:
-    ticker: str = "SOL"
+    ticker: str = "BTC"
     leverage: float = 1.0
-    grid_count: int = 5                 # Grids above + below center (total 10)
-    grid_spacing_pct: float = 1.0       # 1% spacing between levels
+    grid_count: int = 3                 # Grids above + below (Rust grid_levels=3)
+    grid_spacing_pct: float = 2.0       # 2% spacing (Rust grid_spacing=0.02)
     size_per_grid: float = 100.0        # USD per grid order
+    stop_loss_pct: float = 5.0          # Rust stop_loss=0.05
+    grid_reset_bars: int = 480          # Reset grid every 8h (Rust grid_reset_bars=480)
     reinvest_profit: bool = True        # Add profits back to grid
 
 
@@ -37,7 +39,7 @@ class GridState:
 
 
 class GridStrategy:
-    def __init__(self, cfg: GridConfig | None = None):
+    def __init__(self, cfg=None):
         self.cfg = cfg or GridConfig()
         self.state = GridState()
 
