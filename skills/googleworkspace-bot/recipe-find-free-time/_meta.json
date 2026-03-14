@@ -1,0 +1,11 @@
+{
+  "owner": "googleworkspace-bot",
+  "slug": "recipe-find-free-time",
+  "displayName": "Recipe Find Free Time",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773432604099,
+    "commit": null
+  },
+  "history": []
+}
