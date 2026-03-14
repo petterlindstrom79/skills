@@ -5,7 +5,11 @@
     "skill-sync",
     "podcast-production-pipeline",
     "autonomous-pm",
-    "skill-installer"
+    "clawhub-skill-installer",
+    "log-analyzer",
+    "system-health-monitor",
+    "opik-reporter",
+    "clawpi-redpacket-monitor"
   ],
   "syncSettings": {
     "autoCommitToGit": true,
