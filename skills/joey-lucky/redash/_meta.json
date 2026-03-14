@@ -1,0 +1,11 @@
+{
+  "owner": "joey-lucky",
+  "slug": "redash",
+  "displayName": "Redash",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773480158145,
+    "commit": null
+  },
+  "history": []
+}
