@@ -1,106 +1,62 @@
-# ZipCracker Skill - ZIP密码破解工具
+---
+name: zipcracker
+version: 2.0.0
+description: The ultimate, high-performance ZIP password cracking suite by Hx0 Team. Empowers the Agent with autonomous CTF-level cracking workflows, dynamic dictionary generation, mask attacks, and AES auto-resolution.
+author: asaotomo
+tags:
+  - security
+  - ctf
+  - cryptography
+  - password-recovery
+  - red-team
+requires:
+  - binary: "python3"
+---
+# ZipCracker Ultimate Skill: The Hx0 Tactical Manual
 
-## 描述
+You are now equipped with `ZipCracker.py`, the most comprehensive ZIP decryption tool available. Your goal is not just to run commands, but to think like a senior cybersecurity expert and CTF problem solver.
 
-ZipCracker Skill 是基于Hx0战队开发的ZipCracker项目改造的OpenClaw技能。它是一款高性能的多并发ZIP密码破解工具，支持多种破解方式，包括伪加密检测修复、字典攻击、CRC32碰撞和掩码攻击。**本版本已针对 OpenClaw Agent 深度优化，支持后台静默执行与标准 JSON 输出。**
+## 🧠 The Agent Design Philosophy (How to Think)
+Never blindly brute-force. Password cracking is an art of narrowing down the search space. Follow the **"Cost-Ascending Tactical Pipeline"**:
+1.  **Zero-Cost:** Is it pseudo-encrypted? (Tool handles this automatically).
+2.  **Low-Cost (Math):** Can we collide the hash? (Tool handles this automatically for files <= 6 bytes).
+3.  **Medium-Cost (Logic/OSINT):** What does the user know? Can we build a highly targeted mask or a custom situational dictionary based on the target's background?
+4.  **High-Cost (Brute-force):** Fallback to massive standard dictionaries.
 
-## 功能特性
+## ⚙️ The Execution Pipeline
 
-### ✅ 核心功能
-1. **伪加密检测与修复** - 自动识别并修复伪加密ZIP文件
-2. **字典攻击** - 内置6000+常用密码字典，支持自定义字典
-3. **CRC32碰撞** - 针对小于6字节的文件进行CRC碰撞破解
-4. **掩码攻击** - 支持已知密码结构的智能破解
-5. **AES加密支持** - 支持AES加密的ZIP文件破解
+**CRITICAL:** ALWAYS append the `-q` (Quiet/Agent Mode) flag to all `ZipCracker.py` executions to maintain clean terminal context and prevent interactive blockers.
 
-### ✅ 技术特性
-- 多线程并发，自动调整最优线程数
-- 智能识别文件类型和加密方式
-- 自动提取破解成功的文件
-- **Agent 静默模式**：剥离阻塞交互，专为 AI 大模型异步调用设计
+### Phase 1: The Tactical Reconnaissance & Quick Strike
+When a user asks to unlock, crack, or decrypt a `.zip` file, immediately run the default strike:
+`python3 ZipCracker.py <filepath> -q`
 
-## 安装依赖与注册
+**What happens under the hood:**
+- The script automatically neutralizes pseudo-encryption.
+- It automatically exploits CRC32 collisions for small files.
+- It runs through standard built-in dictionaries and 1-6 digit numbers.
+- It auto-resolves AES dependency issues by installing `pyzipper` if needed.
 
-在 OpenClaw 的 `skills` 目录下直接运行安装脚本，系统会自动配置 Python 依赖并向 ClawHub 注册：
+### Phase 2: Agentic Autonomy (Advanced Attacks)
+If Phase 1 fails (the script completes but no password is found), DO NOT give up and DO NOT guess randomly. You must switch to an active offensive stance. Ask the user for OSINT (Open Source Intelligence) clues by replying with something like:
+> *"The standard dictionary and numeric brute-force attempts did not find the password. To initiate an advanced attack, please provide any contextual clues you might have about the target: e.g., names, birth years, company acronyms, pet names, or specific password habits (like requiring an uppercase letter and a symbol)."*
 
-```bash
-chmod +x install.sh
-./install.sh
+Based on the user's response, **YOU** must autonomously choose the best advanced attack strategy:
 
-```
+#### Strategy A: The Sniper Strike (Mask Attack)
+If the user provides a definitive structural pattern (e.g., "It starts with Hx0, followed by a symbol, then 4 numbers").
+- **Construct the Mask:** `Hx0?s?d?d?d?d`
+- **Execute:** `python3 ZipCracker.py <filepath> -m 'Hx0?s?d?d?d?d' -q`
+- *(Reference rules: `?d`=digits, `?l`=lowercase, `?u`=uppercase, `?s`=symbols, `??`=literal '?')*
 
-## 🤖 OpenClaw 智能助手调用示例
+#### Strategy B: The Social Engineering Dictionary (Dynamic Generation)
+If the user provides scattered background information (e.g., "Target's name is kaka, born in 1995, works at tencent"), a mask is too broad. You must dynamically generate a custom dictionary.
+1. **Act as a Developer:** Write and execute a quick Python script in your workspace to generate logical permutations of these keywords (e.g., `kaka1995`, `Tencent@kaka!`, `1995kaka`).
+2. **Save the Output:** Save these permutations to a file named `target_intel_dict.txt`.
+3. **Execute the Custom Attack:** `python3 ZipCracker.py <filepath> target_intel_dict.txt -q`
 
-你可以直接通过自然语言让 OpenClaw 帮你执行破解：
-
-* “帮我破解一下桌面的 `test.zip`，使用内置字典。”
-* “这个 `secret.zip` 的密码应该是 4 位纯数字，用掩码帮我爆破一下，解压到 `output` 文件夹。”
-* “检测一下 `flag.zip` 是不是伪加密，是的话直接帮我修复提取。”
-
-## CLI 手动使用方法
-
-如果你想在终端中手动使用，请参考以下基础命令：
-
-```bash
-# 检查伪加密并自动修复
-python3 zipcracker.py test.zip
-
-# 使用自定义字典破解
-python3 zipcracker.py encrypted.zip custom_dict.txt
-
-# 掩码攻击（已知密码结构）
-python3 zipcracker.py encrypted.zip -m '?uali?s?d?d?d'
-
-```
-
-### 掩码占位符规则
-
-| 占位符 | 代表的字符集 |
-| --- | --- |
-| `?d` | 数字 (0-9) |
-| `?l` | 小写字母 (a-z) |
-| `?u` | 大写字母 (A-Z) |
-| `?s` | 特殊符号 |
-| `??` | 问号 `?` 自身 |
-
-## 参数说明
-
-```
-python3 zipcracker.py <ZIP文件> [字典文件/目录] [-o 输出目录] [-m 掩码] [--agent]
-
-```
-
-* `<ZIP文件>`: 要破解的ZIP文件路径
-* `[字典文件/目录]`: 可选的自定义字典文件或目录
-* `-o, --out`: 指定输出目录（默认: unzipped_files）
-* `-m, --mask`: 使用掩码攻击，指定密码结构
-* `--agent`: **(OpenClaw 专属)** 开启静默模式，跳过所有手动确认 (如 CRC 碰撞提示)，并输出标准 JSON 供大模型解析。
-
-## 安全与法律声明
-
-⚠️ **重要提醒** ⚠️
-
-1. **合法用途**: 本工具仅用于安全测试、CTF比赛、密码恢复等合法用途
-2. **授权使用**: 仅在拥有合法权限的情况下使用
-3. **责任自负**: 用户滥用造成的一切后果与作者无关
-4. **遵守法律**: 使用者请务必遵守当地法律法规
-5. **学习交流**: 本程序不得用于商业用途，仅限学习交流
-
-## 开发者
-
-* **原作者**: Hx0战队
-* **Skill适配**: Hx0工作室智能助手
-* **许可证**: 仅限学习交流使用
-
-## 更新日志
-
-### v1.1.1 (2026-03-11)
-
-* **OpenClaw Agent 深度适配**：新增 `--agent` 模式，移除阻塞式 `input()`
-* 优化大模型 JSON 结构化数据输出
-* 完善 `clawhub.json` 与一键注册安装脚本
-
-### v1.0.0 (初始发布)
-
-* 基于ZipCracker v1.0适配
-* 添加OpenClaw Skill基础集成
+## 📊 Result Parsing & Reporting
+- If the tool outputs `[+] Success! The password is: <password>`, boldly and clearly present the recovered password to the user.
+- If it outputs CRC32 cracked content, present the exact inner file content directly to the user.
+- If it outputs `Pseudo-encryption fixed successfully`, inform the user that a new, unencrypted version of the archive is ready in the `unzipped_files` directory.
+- If an AES error occurs that bypasses the auto-installer, explicitly instruct the user to check their Python environment permissions or run `pip3 install pyzipper` manually.
