@@ -1,7 +1,6 @@
 ---
 name: Liquidity Monitor
-version: 1.0.0
-description: Monitor DEX liquidity pool depth, track liquidity changes, calculate LP yield, and estimate impermanent loss.
+description: "Monitor DEX liquidity pool depth, track liquidity changes, calculate LP yield, and estimate impermanent loss. Use when you need liquidity monitor capabilities. Triggers on: liquidity monitor."
 ---
 
 # Liquidity Monitor 💧
@@ -121,3 +120,14 @@ bash scripts/liquidity-monitor.sh dashboard \
 | Age | 15% | Older pools are generally safer |
 | Top LP % | 15% | Lower concentration = better |
 | Smart Contract Audit | 10% | Known audited DEX protocols score higher |
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+
+## Commands
+
+- `pools` — Pools
+- `il-calc` — Il Calc
+- `yield-compare` — Yield Compare
+- `lp-calc` — Lp Calc

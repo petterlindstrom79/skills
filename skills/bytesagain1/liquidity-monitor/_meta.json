@@ -3,11 +3,16 @@
   "slug": "liquidity-monitor",
   "displayName": "Liquidity Monitor",
   "latest": {
-    "version": "2.2.0",
-    "publishedAt": 1773421486331,
-    "commit": "https://github.com/openclaw/skills/commit/b9de8e87b9842841ce3c5f7fe7591b8b44b0a29f"
+    "version": "2.4.0",
+    "publishedAt": 1773452397185,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.0",
+      "publishedAt": 1773421486331,
+      "commit": "https://github.com/openclaw/skills/commit/b9de8e87b9842841ce3c5f7fe7591b8b44b0a29f"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1773361406175,
