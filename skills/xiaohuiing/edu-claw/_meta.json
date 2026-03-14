@@ -1,13 +1,18 @@
 {
   "owner": "xiaohuiing",
   "slug": "edu-claw",
-  "displayName": "EduClaw - 主动式英语学习家教",
+  "displayName": "EduClaw - 主动式英语家教",
   "latest": {
-    "version": "1.1.5",
-    "publishedAt": 1773486856844,
-    "commit": "https://github.com/openclaw/skills/commit/e89c3f69e0e06bf686f853e3397573f1d403aadf"
+    "version": "2.2.3",
+    "publishedAt": 1773491182289,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.5",
+      "publishedAt": 1773486856844,
+      "commit": "https://github.com/openclaw/skills/commit/e89c3f69e0e06bf686f853e3397573f1d403aadf"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1773474510339,

@@ -1,12 +1,17 @@
 {
   "name": "educlaw",
-  "version": "1.0.3",
-  "description": "主动式英语学习家教，拟人化AI老师，兴趣引导教学",
-  "author": "产品老李",
+  "version": "2.2.2",
+  "description": "主动式英语家教 - Interactive English Tutor",
+  "author": "xiaohuiing",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "github.com/xiaohuiing/educlaw"
+  "keywords": ["english", "learning", "英语", "学习", "家教"],
+  "safety": {
+    "data_collection": "none",
+    "external_services": "none",
+    "user_tracking": "session-only"
   },
-  "keywords": ["教育", "英语", "K12", "主动学习", "家教"]
+  "repository": {
+    "github": "https://github.com/xiaohuiing/educlaw",
+    "gitee": "https://gitee.com/huiing/educlaw"
+  }
 }
