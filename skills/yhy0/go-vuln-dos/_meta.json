@@ -1,0 +1,11 @@
+{
+  "owner": "yhy0",
+  "slug": "go-vuln-dos",
+  "displayName": "Go Vuln Dos",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1773476213685,
+    "commit": null
+  },
+  "history": []
+}
