@@ -1,11 +1,17 @@
 {
   "owner": "jeremyknows",
   "slug": "prism",
-  "displayName": "PRISM — Parallel Review by Independent Specialist Models",
+  "displayName": "Prism",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1773255482538,
-    "commit": "https://github.com/openclaw/skills/commit/1d25ed071fc8362b877a64b0cda31b1b2a9ff345"
+    "version": "2.0.1",
+    "publishedAt": 1773410449015,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1773255482538,
+      "commit": "https://github.com/openclaw/skills/commit/1d25ed071fc8362b877a64b0cda31b1b2a9ff345"
+    }
+  ]
 }
