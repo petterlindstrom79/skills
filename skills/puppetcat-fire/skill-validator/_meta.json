@@ -1,0 +1,11 @@
+{
+  "owner": "puppetcat-fire",
+  "slug": "skill-validator",
+  "displayName": "Skill Validator",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1773483473065,
+    "commit": null
+  },
+  "history": []
+}
