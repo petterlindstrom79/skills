@@ -1,0 +1,11 @@
+{
+  "owner": "dsqsky",
+  "slug": "azure-keyvault-certificates-rust",
+  "displayName": "Azure Keyvault Certificates Rust",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1773279246760,
+    "commit": null
+  },
+  "history": []
+}
