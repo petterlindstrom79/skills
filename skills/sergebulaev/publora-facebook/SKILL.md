@@ -7,137 +7,105 @@ description: >
 
 # Publora — Facebook
 
-Post and schedule Facebook Page content via the Publora API.
+Facebook platform skill for the Publora API. For auth, core scheduling, media upload, and workspace/webhook docs, see the `publora` core skill.
 
-> **Prerequisite:** Install the `publora` core skill for auth setup and getting platform IDs.
+**Base URL:** `https://api.publora.com/api/v1`  
+**Header:** `x-publora-key: sk_YOUR_KEY`  
+**Platform ID format:** `facebook-{pageId}`
 
-## Platform ID Format
+If you manage multiple Pages, each Page gets its own platform ID.
 
-`facebook-{pageId}` — get your exact ID from `GET /api/v1/platform-connections`.
+## Requirements
 
-## Account Requirements
+- A **Facebook Page** (not a personal profile) connected via OAuth
+- Page admin permissions granted during OAuth
 
-- **Facebook Pages only** — personal profiles are NOT supported via the API
-- Each connected Page gets its own `facebook-{pageId}` platform ID
-- **Multiple pages:** can post to multiple pages in a single API call by including multiple IDs in the `platforms` array
+## Platform Limits (API)
 
-## Supported Content
+> ⚠️ API video limits are significantly stricter than native.
 
-| Type | Supported | Notes |
-|------|-----------|-------|
-| Text only | ✅ | Up to 63,206 chars |
-| Single image | ✅ | JPEG/PNG; WebP auto-converted to JPEG |
-| Multiple images | ✅ | Becomes album/carousel |
-| Video | ✅ | MP4 only; cannot mix with images in same post |
-| Link preview | ✅ | Auto-generated from URLs in text (Facebook behavior) |
+| Property | API Limit | Native App |
+|----------|-----------|-----------|
+| Text | **63,206 characters** | Same |
+| Images | Up to 10 × 10 MB | JPEG, PNG, GIF, BMP, TIFF |
+| Video | **45 min** / **2 GB** | 240 min / 4 GB |
+| Reels duration | **90 seconds** | 90 seconds |
+| Reels rate limit | 30 Reels/day/Page | — |
+| Reels posting | Pages only (not profiles) | — |
+| Text only | ✅ Yes | — |
 
-## Text Limit
+**Common errors:**
+- `Error 1363026` — video over 40 min → trim to under 45 min
+- `Error 1363023` — file over 2 GB → compress
+- `Error 1363128` — Reels duration outside 3–90s range
 
-Up to **63,206 characters** (no hard API limit, but this is Facebook's recommended maximum).
+> Posts under 80 characters get 66% more engagement on Facebook.
 
-## Post to a Facebook Page
-
-```javascript
-await fetch('https://api.publora.com/api/v1/create-post', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'x-publora-key': 'sk_YOUR_KEY' },
-  body: JSON.stringify({
-    content: 'Big news from our team today! We just crossed 10,000 customers. 🎉\n\nThank you all for your support. Here is what is coming next...',
-    platforms: ['facebook-PAGE_ID']
-  })
-});
-```
-
-## Post to Multiple Pages
+## Post a Text Update
 
 ```javascript
 await fetch('https://api.publora.com/api/v1/create-post', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', 'x-publora-key': 'sk_YOUR_KEY' },
   body: JSON.stringify({
-    content: 'Announcement going out to all our brand pages!',
-    platforms: ['facebook-PAGE_ID_1', 'facebook-PAGE_ID_2', 'facebook-PAGE_ID_3']
+    content: 'Exciting news from our team! We just launched a new feature. Check it out at publora.com 🎉',
+    platforms: ['facebook-123456789']
   })
 });
 ```
 
-## Post with Images (Album)
-
-Multiple images create a Facebook album. Use the 3-step upload workflow, calling `get-upload-url` once per image with the same `postGroupId`.
-
-```python
-import requests
-
-HEADERS = { 'Content-Type': 'application/json', 'x-publora-key': 'sk_YOUR_KEY' }
-
-# Step 1: Create post
-post = requests.post('https://api.publora.com/api/v1/create-post', headers=HEADERS, json={
-    'content': 'Photos from our annual company retreat! Great time with the team.',
-    'platforms': ['facebook-PAGE_ID'],
-    'scheduledTime': '2026-03-16T10:00:00.000Z'
-}).json()
-post_group_id = post['postGroupId']
-
-# Steps 2+3: Upload each image (all use same postGroupId)
-for img_path in ['retreat1.jpg', 'retreat2.jpg', 'retreat3.jpg']:
-    upload = requests.post('https://api.publora.com/api/v1/get-upload-url', headers=HEADERS, json={
-        'fileName': img_path, 'contentType': 'image/jpeg',
-        'type': 'image', 'postGroupId': post_group_id
-    }).json()
-    with open(img_path, 'rb') as f:
-        requests.put(upload['uploadUrl'], headers={'Content-Type': 'image/jpeg'}, data=f)
-```
-
-**WebP note:** WebP images are automatically converted to JPEG by Publora.
-
-## Post a Video
-
-Videos must be posted separately — cannot mix images and video in the same post.
-
-```python
-# Step 1: Create post
-post = requests.post('https://api.publora.com/api/v1/create-post', headers=HEADERS, json={
-    'content': 'Watch our product demo — 2 minutes to see everything! 🎬',
-    'platforms': ['facebook-PAGE_ID']
-}).json()
-
-# Step 2: Get upload URL
-upload = requests.post('https://api.publora.com/api/v1/get-upload-url', headers=HEADERS, json={
-    'fileName': 'demo.mp4', 'contentType': 'video/mp4',
-    'type': 'video', 'postGroupId': post['postGroupId']
-}).json()
-
-# Step 3: Upload to S3
-with open('demo.mp4', 'rb') as f:
-    requests.put(upload['uploadUrl'], headers={'Content-Type': 'video/mp4'}, data=f)
-```
-
-## Schedule a Facebook Post
+## Schedule a Post
 
 ```javascript
 body: JSON.stringify({
-  content: 'Weekly update post — scheduled for Monday morning.',
-  platforms: ['facebook-PAGE_ID'],
-  scheduledTime: '2026-03-16T08:00:00.000Z'
+  content: 'Your Facebook Page update',
+  platforms: ['facebook-123456789'],
+  scheduledTime: '2026-03-20T13:00:00.000Z'
 })
 ```
 
-## Token Auto-Refresh
+## Post with Image
 
-Facebook access tokens expire after **59 days**. Publora automatically refreshes them.
+```javascript
+// Step 1: Create post
+const post = await fetch('https://api.publora.com/api/v1/create-post', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-publora-key': 'sk_YOUR_KEY' },
+  body: JSON.stringify({
+    content: 'Check out our latest product photo!',
+    platforms: ['facebook-123456789']
+  })
+}).then(r => r.json());
 
-- If auto-refresh **succeeds:** no action needed
-- If auto-refresh **fails:** reconnect the page via the Publora dashboard (Settings → Connections)
+// Step 2: Get upload URL
+const upload = await fetch('https://api.publora.com/api/v1/get-upload-url', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-publora-key': 'sk_YOUR_KEY' },
+  body: JSON.stringify({
+    postGroupId: post.postGroupId,
+    fileName: 'photo.jpg',
+    contentType: 'image/jpeg',
+    type: 'image'
+  })
+}).then(r => r.json());
 
-## Link Previews
+// Step 3: Upload
+await fetch(upload.uploadUrl, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'image/jpeg' },
+  body: imageBytes
+});
+```
 
-When you include a URL in your post text, Facebook **automatically generates a link preview** (title, description, thumbnail). This is Facebook's native behavior — Publora does not control it.
+## Post a Reel (3–90 seconds)
 
-## Tips for Facebook
+Use the same flow but upload a short video file. Reels are posted to Pages only.
 
-- **Pages only** — personal profiles cannot be used via the API
-- **Multiple pages** in one call → include all `facebook-{pageId}` values in `platforms` array
-- **Images and videos don't mix** in one post — choose one
-- **Link preview** is automatic when a URL is in the text
-- **Token expires every 59 days** — Publora auto-refreshes, but watch for reconnect prompts
-- **Long-form content works** — Facebook supports up to 63,206 chars, great for detailed announcements
+## Platform Quirks
+
+- **Pages only** — personal profiles are not supported via the Facebook Graph API
+- **Multiple pages** — each Page has a separate platform ID; connect them individually in Publora dashboard
+- **Video limits**: 45 min / 2 GB via API (native allows 240 min / 4 GB)
+- **Reels**: Must be 3–90 seconds; limited to 30 per day per Page
+- **Carousels**: Up to 10 images or videos (cannot mix in the same carousel)
+- **Rate limit formula**: 200 × users/hour
