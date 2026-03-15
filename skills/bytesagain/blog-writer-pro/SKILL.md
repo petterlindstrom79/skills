@@ -50,7 +50,6 @@ Agent会根据用户需求自动调用 `scripts/blog.sh` 脚本。
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
 
-
 ## Commands
 
 - `write` — Write
@@ -60,3 +59,13 @@ Powered by BytesAgain | bytesagain.com
 - `series` — Series
 - `rewrite` — Rewrite
 - `cta` — Cta
+
+## Examples
+
+```bash
+# Show help
+blog-writer-pro help
+
+# Run
+blog-writer-pro run
+```
