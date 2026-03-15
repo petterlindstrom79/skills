@@ -18,8 +18,6 @@ SleepWell helps you understand and improve your sleep habits. Track when you go 
 - **Visual charts**: Weekly sleep duration bars
 - **Smart analysis**: Warns when below recommended 7-9 hours
 - **Sleep tips**: Evidence-based tips for better rest
-- **Private**: All data stored locally
-
 ## Commands
 
 - `log <bedtime> <wakeup> [quality 1-5]` — Log a night's sleep (times in HH:MM format)
