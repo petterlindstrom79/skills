@@ -3,11 +3,16 @@
   "slug": "compensation-calc",
   "displayName": "Compensation Calc",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773538746751,
-    "commit": "https://github.com/openclaw/skills/commit/61cbe6a2bd50e7a881b749dee56e372b7a607034"
+    "version": "1.0.4",
+    "publishedAt": 1773612889224,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773538746751,
+      "commit": "https://github.com/openclaw/skills/commit/61cbe6a2bd50e7a881b749dee56e372b7a607034"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1773421088200,

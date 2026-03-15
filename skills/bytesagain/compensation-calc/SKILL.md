@@ -32,13 +32,5 @@ bash scripts/comp.sh total "月薪3万 年终3个月 期权1万股"
 💬 Feedback & Feature Requests: https://bytesagain.com/feedback
 Powered by BytesAgain | bytesagain.com
 
-## How It Works
-
-Reads input, processes with built-in logic, outputs structured results.
-
-## Tips
-
 - Run `compensation-calc help` for all commands
-- No API keys required
-- Works offline
 
