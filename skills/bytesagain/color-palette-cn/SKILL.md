@@ -1,9 +1,6 @@
 ---
 name: color-palette-cn
-version: 1.0.0
-description: "配色方案生成、色彩和谐(互补/类似/三色)、品牌配色、对比度检查(WCAG)、颜色格式转换(HEX/RGB/HSL)、流行色推荐。Color palette generator with harmony, brand colors, WCAG contrast check, format conversion, trending colors."
-author: BytesAgain
-tags: [color, palette, design, harmony, contrast, WCAG, HEX, RGB, HSL, brand, trending]
+description: "配色方案生成、色彩和谐(互补/类似/三色)、品牌配色、对比度检查(WCAG)、颜色格式转换(HEX/RGB/HSL)、流行色推荐。Color palette generator with harmony, brand colors, WCAG contrast check, format conversion, trending colors. Use when you need color palette cn capabilities. Triggers on: color palette cn."
 ---
 # color-palette-cn
 
@@ -28,7 +25,6 @@ A: 主要输出Markdown格式，方便复制和编辑。
 | `convert` | convert |
 | `trending` | trending |
 
-
 ## 专业建议
 
 - 法则** — 主色60%，辅色30%，点缀色10%
@@ -49,3 +45,16 @@ A: 主要输出Markdown格式，方便复制和编辑。
 - `harmony` — Execute harmony
 - `trending` — Execute trending
 - `vibrant` — 3498db" complementary
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+## Examples
+
+```bash
+# Show help
+color-palette-cn help
+
+# Run
+color-palette-cn run
+```

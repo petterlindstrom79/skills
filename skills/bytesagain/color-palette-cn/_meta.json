@@ -3,11 +3,16 @@
   "slug": "color-palette-cn",
   "displayName": "Color Palette Cn",
   "latest": {
-    "version": "2.2.0",
-    "publishedAt": 1773421064296,
-    "commit": "https://github.com/openclaw/skills/commit/4dc655d21007e35000823672ad7400e6bcf91043"
+    "version": "2.3.2",
+    "publishedAt": 1773610748310,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.0",
+      "publishedAt": 1773421064296,
+      "commit": "https://github.com/openclaw/skills/commit/4dc655d21007e35000823672ad7400e6bcf91043"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773170259895,
