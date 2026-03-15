@@ -3,11 +3,16 @@
   "slug": "retake-tv-agent",
   "displayName": "Retake.tv Agent Live Streaming",
   "latest": {
-    "version": "2.1.1",
-    "publishedAt": 1772811598728,
-    "commit": "https://github.com/openclaw/skills/commit/ce18b85bf6d05f918c0ce191e8a31c3a4acfda22"
+    "version": "2.1.2",
+    "publishedAt": 1773412806455,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.1",
+      "publishedAt": 1772811598728,
+      "commit": "https://github.com/openclaw/skills/commit/ce18b85bf6d05f918c0ce191e8a31c3a4acfda22"
+    },
     {
       "version": "2.0.0",
       "publishedAt": 1771105084737,
