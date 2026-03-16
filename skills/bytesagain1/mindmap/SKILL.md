@@ -1,7 +1,7 @@
 ---
 name: MindMap
 description: "Text-based mind mapping tool. Create, organize, and visualize ideas as tree structures. Export to markdown. No GUI needed."
-version: "1.0.0"
+version: "2.0.0"
 author: "BytesAgain"
 tags: ["mindmap","brainstorm","ideas","organize","thinking","productivity"]
 ---

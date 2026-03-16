@@ -3,11 +3,16 @@
   "slug": "mindmap",
   "displayName": "Mindmap",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1773613970592,
-    "commit": "https://github.com/openclaw/skills/commit/c366072c3b927b11d1c290d934631d79743d578c"
+    "version": "1.0.7",
+    "publishedAt": 1773666521941,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1773613970592,
+      "commit": "https://github.com/openclaw/skills/commit/c366072c3b927b11d1c290d934631d79743d578c"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773521878954,

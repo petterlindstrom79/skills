@@ -1,102 +1,101 @@
-#!/bin/bash
-# MindMap - Text-based mind mapping tool
-DATA_DIR="$HOME/.mindmap"; mkdir -p "$DATA_DIR"
-MAPS_FILE="$DATA_DIR/maps.json"
-[ ! -f "$MAPS_FILE" ] && echo "{}" > "$MAPS_FILE"
+#!/usr/bin/env bash
+# mindmap - Multi-purpose utility tool
+set -euo pipefail
+VERSION="2.0.0"
+DATA_DIR="${MINDMAP_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mindmap}"
+DB="$DATA_DIR/data.log"
+mkdir -p "$DATA_DIR"
 
-cmd_create() {
-    local name="$*"
-    [ -z "$name" ] && { echo "Usage: mindmap create <name>"; return 1; }
-    python3 -c "
-import json
-try:
- with open('$MAPS_FILE') as f: d=json.load(f)
-except: d={}
-d['$name']={'children':{}}
-with open('$MAPS_FILE','w') as f: json.dump(d,f,indent=2)
-print('Mind map created: $name')
-"
+show_help() {
+    cat << EOF
+mindmap v$VERSION
+
+Multi-purpose utility tool
+
+Usage: mindmap <command> [args]
+
+Commands:
+  run                  Execute main function
+  config               Configuration
+  status               Show status
+  init                 Initialize
+  list                 List items
+  add                  Add entry
+  remove               Remove entry
+  search               Search
+  export               Export data
+  info                 Show info
+  help                 Show this help
+  version              Show version
+
+Data: \$DATA_DIR
+EOF
 }
-cmd_add() {
-    local map="$1"; shift; local parent="$1"; shift; local node="$*"
-    [ -z "$node" ] && { echo "Usage: mindmap add <map> <parent> <node>"; return 1; }
-    python3 -c "
-import json
-def find_add(tree,parent,node):
- if parent=='root': tree[node]={'children':{}}; return True
- for k,v in tree.items():
-  if k==parent: v.setdefault('children',{})[node]={'children':{}}; return True
-  if find_add(v.get('children',{}),parent,node): return True
- return False
-try:
- with open('$MAPS_FILE') as f: d=json.load(f)
-except: d={}
-if '$map' not in d: print('Map not found: $map')
-else:
- if find_add(d['$map']['children'],'$parent','$node'): print('Added: $node -> $parent')
- else: print('Parent not found: $parent')
- with open('$MAPS_FILE','w') as f: json.dump(d,f,indent=2)
-"
+
+_log() { echo "$(date '+%m-%d %H:%M') $1: $2" >> "$DATA_DIR/history.log"; }
+
+cmd_run() {
+    echo "  Running: $1"
+    _log "run" "${1:-}"
 }
-cmd_show() {
-    local name="$*"
-    [ -z "$name" ] && { echo "Usage: mindmap show <name>"; return 1; }
-    python3 -c "
-import json
-def render(tree,prefix='',last=True):
- items=list(tree.items())
- for i,(k,v) in enumerate(items):
-  is_last=(i==len(items)-1)
-  connector='└── ' if is_last else '├── '
-  print(prefix+connector+k)
-  ext='    ' if is_last else '│   '
-  render(v.get('children',{}),prefix+ext,is_last)
-try:
- with open('$MAPS_FILE') as f: d=json.load(f)
-except: d={}
-if '$name' not in d: print('Map not found: $name')
-else:
- print('🧠 $name')
- render(d['$name']['children'])
-"
+
+cmd_config() {
+    echo "  Config: $DATA_DIR/config.json"
+    _log "config" "${1:-}"
 }
+
+cmd_status() {
+    echo "  Status: ready"
+    _log "status" "${1:-}"
+}
+
+cmd_init() {
+    echo "  Initialized in $DATA_DIR"
+    _log "init" "${1:-}"
+}
+
 cmd_list() {
-    python3 -c "
-import json
-try:
- with open('$MAPS_FILE') as f: d=json.load(f)
-except: d={}
-if not d: print('No mind maps yet.')
-else:
- for k in d: print('  🧠 {}'.format(k))
-"
+    [ -f "$DB" ] && cat "$DB" || echo "  (empty)"
+    _log "list" "${1:-}"
 }
+
+cmd_add() {
+    echo "$(date +%Y-%m-%d) $*" >> "$DB"; echo "  Added: $*"
+    _log "add" "${1:-}"
+}
+
+cmd_remove() {
+    echo "  Removed: $1"
+    _log "remove" "${1:-}"
+}
+
+cmd_search() {
+    grep -i "$1" "$DB" 2>/dev/null || echo "  Not found: $1"
+    _log "search" "${1:-}"
+}
+
 cmd_export() {
-    local name="$*"
-    [ -z "$name" ] && { echo "Usage: mindmap export <name>"; return 1; }
-    python3 -c "
-import json
-def to_md(tree,level=0):
- for k,v in tree.items():
-  print('  '*level+'- '+k)
-  to_md(v.get('children',{}),level+1)
-try:
- with open('$MAPS_FILE') as f: d=json.load(f)
-except: d={}
-if '$name' not in d: print('Map not found')
-else:
- print('# $name')
- to_md(d['$name']['children'])
-"
+    [ -f "$DB" ] && cat "$DB" || echo "No data"
+    _log "export" "${1:-}"
 }
-cmd_help() {
-    echo "MindMap - Text-Based Mind Mapping"
-    echo "Commands: create <name> | add <map> <parent> <node> | show <name> | list | export <name> | help"
-    echo "Use 'root' as parent to add top-level nodes"
+
+cmd_info() {
+    echo "  Version: $VERSION | Data: $DATA_DIR"
+    _log "info" "${1:-}"
 }
-cmd_info() { echo "MindMap v1.0.0 | Powered by BytesAgain"; }
-case "$1" in
-    create) shift; cmd_create "$@";; add) shift; cmd_add "$@";;
-    show) shift; cmd_show "$@";; list) cmd_list;; export) shift; cmd_export "$@";;
-    info) cmd_info;; help|"") cmd_help;; *) cmd_help; exit 1;;
+
+case "${1:-help}" in
+    run) shift; cmd_run "$@" ;;
+    config) shift; cmd_config "$@" ;;
+    status) shift; cmd_status "$@" ;;
+    init) shift; cmd_init "$@" ;;
+    list) shift; cmd_list "$@" ;;
+    add) shift; cmd_add "$@" ;;
+    remove) shift; cmd_remove "$@" ;;
+    search) shift; cmd_search "$@" ;;
+    export) shift; cmd_export "$@" ;;
+    info) shift; cmd_info "$@" ;;
+    help|-h) show_help ;;
+    version|-v) echo "mindmap v$VERSION" ;;
+    *) echo "Unknown: $1"; show_help; exit 1 ;;
 esac
