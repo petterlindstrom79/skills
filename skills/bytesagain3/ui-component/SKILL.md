@@ -1,6 +1,8 @@
 ---
+version: "2.0.0"
 name: ui-component
 description: "UI组件HTML/CSS代码生成。表单、表格、卡片、模态框、导航栏，输出完整可运行HTML文件。UI component generator: form, table, card, modal, navbar as standalone HTML files. Use when you need ui component capabilities. Triggers on: ui component."
+author: BytesAgain
 ---
 # ui-component
 

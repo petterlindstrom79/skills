@@ -3,11 +3,16 @@
   "slug": "ui-component",
   "displayName": "Ui Component",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1773614925722,
-    "commit": "https://github.com/openclaw/skills/commit/6bc77b3aed55d771d1a06a0d7a236fe5d323ccd1"
+    "version": "1.0.6",
+    "publishedAt": 1773674121135,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1773614925722,
+      "commit": "https://github.com/openclaw/skills/commit/6bc77b3aed55d771d1a06a0d7a236fe5d323ccd1"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1773444839762,
