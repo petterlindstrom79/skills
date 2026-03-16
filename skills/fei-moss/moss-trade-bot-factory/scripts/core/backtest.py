@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+from datetime import timezone
 
 from core.decision import DecisionParams, compute_signals
 from core.indicators import atr as compute_atr
@@ -13,6 +14,18 @@ def _unrealized_pnl_pct(pos: Trade, current_price: float) -> float:
         return (current_price - pos.entry_price) / pos.entry_price * pos.leverage
     else:
         return (pos.entry_price - current_price) / pos.entry_price * pos.leverage
+
+
+def _format_ts(value) -> str | None:
+    if value is None:
+        return None
+    if hasattr(value, "tzinfo"):
+        if value.tzinfo is None:
+            value = value.tz_localize(timezone.utc) if hasattr(value, "tz_localize") else value.replace(tzinfo=timezone.utc)
+        else:
+            value = value.tz_convert(timezone.utc) if hasattr(value, "tz_convert") else value.astimezone(timezone.utc)
+        return value.isoformat().replace("+00:00", "Z")
+    return str(value)
 
 
 def run_backtest(
@@ -121,7 +134,7 @@ def run_backtest(
                 pnl = pos.margin * pnl_pct
                 pos.exit_idx = i
                 pos.exit_price = exit_price
-                pos.exit_time = str(df["timestamp"].iloc[i]) if has_ts else None
+                pos.exit_time = _format_ts(df["timestamp"].iloc[i]) if has_ts else None
                 pos.pnl = pnl
                 pos.pnl_pct = pnl_pct
                 pos.exit_reason = exit_reason
@@ -154,7 +167,7 @@ def run_backtest(
                         new_pos = Trade(
                             entry_idx=i, entry_price=price, direction=pos.direction,
                             leverage=leverage, margin=new_margin, sl_price=sl_p, tp_price=tp_p,
-                            entry_time=str(df["timestamp"].iloc[i]) if has_ts else None,
+                            entry_time=_format_ts(df["timestamp"].iloc[i]) if has_ts else None,
                         )
                         capital -= new_margin
                         positions.append(new_pos)
@@ -180,7 +193,7 @@ def run_backtest(
                 pos = Trade(
                     entry_idx=i, entry_price=price, direction=direction,
                     leverage=leverage, margin=margin, sl_price=sl_p, tp_price=tp_p,
-                    entry_time=str(df["timestamp"].iloc[i]) if has_ts else None,
+                    entry_time=_format_ts(df["timestamp"].iloc[i]) if has_ts else None,
                 )
                 capital -= margin
                 positions.append(pos)
@@ -199,7 +212,7 @@ def run_backtest(
         pnl_pct = max(pnl_pct, -1.0)
         pos.exit_idx = len(df) - 1
         pos.exit_price = price
-        pos.exit_time = str(df["timestamp"].iloc[-1]) if has_ts else None
+        pos.exit_time = _format_ts(df["timestamp"].iloc[-1]) if has_ts else None
         pos.pnl = pos.margin * pnl_pct
         pos.pnl_pct = pnl_pct
         pos.exit_reason = "end_of_data"
@@ -228,7 +241,13 @@ def _build_result(trades, equity, blowup_count=0, total_deposited=0.0, initial_c
 
     total_win = sum(t.pnl for t in wins)
     total_loss = abs(sum(t.pnl for t in losses))
-    pf = total_win / total_loss if total_loss > 0 else float("inf")
+    if total_loss > 0:
+        pf = total_win / total_loss
+    elif total_win > 0:
+        # Keep upload/result JSON finite so it matches the platform verifier contract.
+        pf = 999999.0
+    else:
+        pf = 0.0
 
     avg_win = np.mean([t.pnl_pct for t in wins]) if wins else 0
     avg_loss = np.mean([t.pnl_pct for t in losses]) if losses else 0

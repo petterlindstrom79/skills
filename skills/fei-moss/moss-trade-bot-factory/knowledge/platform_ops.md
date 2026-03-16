@@ -38,6 +38,8 @@
 
 ### 重要：平台 verifier 行为
 
+**evolution_log / `--evolution-log-file` 为选填**：接口不强制。**不填 = 不进化模式**（平台用 bot.params 单参回放一整段）；**填了 = 进化模式**（平台按 evolution_log 分段 stitched 回放，与本地 run_evolve_backtest 同类）。
+
 - **evolution_log 非空**：平台做**分段 stitched 回放**（和本地 run_evolve_backtest 同类），逐段用 evolution_log 里的 params_used，对比你提交的 backtest_result。
 - **evolution_log 为空**：平台退化成**单参数普通回放**（只用 bot.params 跑一整段），和本地“分段进化”结果**不是同一类回测**，交易数、收益都会对不上。
 

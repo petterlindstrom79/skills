@@ -17,6 +17,7 @@ import json
 import sys
 import os
 import copy
+from datetime import timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -49,6 +50,13 @@ TACTICAL_FLOAT_FIELDS = [
 MAX_DRIFT_PCT = 0.30
 
 
+def resolve_params_dict(raw_params: dict | None) -> dict:
+    """Materialize missing fields with DecisionParams defaults."""
+    raw_params = raw_params or {}
+    clean = {k: v for k, v in raw_params.items() if v is not None}
+    return DecisionParams.from_dict(clean).to_dict()
+
+
 def clamp_tactical_drift(current_params: dict, initial_params: dict) -> dict:
     """Clamp tactical float params to initial_value +/- 30%. Prevent grinding to no-trade."""
     result = current_params.copy()
@@ -75,6 +83,18 @@ def lock_personality(current_params: dict, initial_params: dict) -> dict:
     return result
 
 
+def _to_rfc3339(ts) -> str:
+    if ts is None:
+        return ""
+    if hasattr(ts, "tzinfo"):
+        if ts.tzinfo is None:
+            ts = ts.tz_localize(timezone.utc) if hasattr(ts, "tz_localize") else ts.replace(tzinfo=timezone.utc)
+        else:
+            ts = ts.tz_convert(timezone.utc) if hasattr(ts, "tz_convert") else ts.astimezone(timezone.utc)
+        return ts.isoformat().replace("+00:00", "Z")
+    return str(ts)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Segmented backtest with evolution")
     parser.add_argument("--data", required=True, help="OHLCV CSV path")
@@ -97,6 +117,7 @@ def main():
     else:
         print("Error: --params or --params-file required", file=sys.stderr)
         sys.exit(1)
+    initial_params = resolve_params_dict(initial_params)
 
     evolution_schedule = None
     if args.evolution_file:
@@ -125,7 +146,7 @@ def main():
             evo_params = evolution_schedule[seg_idx].get("params", current_params)
             evo_params = lock_personality(evo_params, initial_params)
             evo_params = clamp_tactical_drift(evo_params, initial_params)
-            current_params = evo_params
+            current_params = resolve_params_dict(evo_params)
 
         lookback = min(200, seg_start)
         calc_start = seg_start - lookback
@@ -153,8 +174,8 @@ def main():
         seg_end = min((seg_idx + 1) * args.segment_bars, total_bars)
         if seg_end <= seg_start:
             break
-        seg_start_time = str(df["timestamp"].iloc[seg_start]) if has_ts else f"bar_{seg_start}"
-        seg_end_time = str(df["timestamp"].iloc[seg_end - 1]) if has_ts else f"bar_{seg_end}"
+        seg_start_time = _to_rfc3339(df["timestamp"].iloc[seg_start]) if has_ts else f"bar_{seg_start}"
+        seg_end_time = _to_rfc3339(df["timestamp"].iloc[seg_end - 1]) if has_ts else f"bar_{seg_end}"
         seg_boundaries.append((seg_idx, seg_start, seg_end, seg_start_time, seg_end_time))
 
     equity = full_result.equity_curve
@@ -167,7 +188,7 @@ def main():
             evo_params = evolution_schedule[seg_idx].get("params", current_params_track)
             evo_params = lock_personality(evo_params, initial_params)
             evo_params = clamp_tactical_drift(evo_params, initial_params)
-            current_params_track = evo_params
+            current_params_track = resolve_params_dict(evo_params)
 
         eq_start = equity.iloc[seg_start] if seg_start < len(equity) else args.capital
         eq_end = equity.iloc[min(seg_end, len(equity) - 1)]
@@ -275,7 +296,7 @@ def main():
     output = {
         "initial_params": initial_params,
         "evolution_log": evolution_log,
-        "final_params": current_params,
+        "final_params": resolve_params_dict(current_params),
         "backtest_result": full_result.to_dict(),
         "equity_curve": full_result.equity_curve.tolist(),
         "trades": trades_list,
@@ -302,7 +323,7 @@ def main():
         "time_range": e["time_range"],
         "seg_return": f"{e['segment_result']['total_return']*100:+.1f}%",
         "trades": e["segment_result"]["total_trades"],
-        "cumulative": f"{e['cumulative_return']*100:+.1f}%",
+        "cumulative": f"{e['cumulative_context']['cumulative_return']*100:+.1f}%",
     } for e in evolution_log]}, indent=2, ensure_ascii=False))
 
 
