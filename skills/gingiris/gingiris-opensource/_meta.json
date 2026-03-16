@@ -1,13 +1,18 @@
 {
   "owner": "gingiris",
   "slug": "gingiris-opensource",
-  "displayName": "Gingiris Opensource",
+  "displayName": "GitHub Stars & Open Source Marketing",
   "latest": {
-    "version": "1.6.2",
-    "publishedAt": 1772721871497,
-    "commit": "https://github.com/openclaw/skills/commit/7133157d8b63704ecff8feb324066cea917ed3cf"
+    "version": "1.2.0",
+    "publishedAt": 1773503607317,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.2",
+      "publishedAt": 1772721871497,
+      "commit": "https://github.com/openclaw/skills/commit/7133157d8b63704ecff8feb324066cea917ed3cf"
+    },
     {
       "version": "1.6.1",
       "publishedAt": 1772721492812,

@@ -1,20 +1,73 @@
----
-name: gingiris-opensource
-description: |
-  🇺🇸 Open Source Launch Marketing Playbook — Complete SOP from strategy to execution. GitHub star growth tactics, KOL partnership lists, Reddit marketing, community distribution across global channels.
-  
-  🇨🇳 开源项目发布整合营销手册 — 从战略到执行的完整 SOP。GitHub Star 增长策略、KOL 合作清单、Reddit 运营、海外群组分发。
-  
-  🇯🇵 オープンソースローンチマーケティングガイド — 戦略から実行までの完全SOP。GitHub Star成長戦略、KOLパートナーシップ、Redditマーケティング、グローバルコミュニティ配信。
-  
-  🇰🇷 오픈소스 런칭 마케팅 플레이북 — 전략부터 실행까지 완벽한 SOP. GitHub 스타 성장 전략, KOL 파트너십, Reddit 마케팅, 글로벌 커뮤니티 배포.
-  
-  Triggers: "open source launch" | "GitHub stars" | "OSS marketing" | "developer community" | "Reddit marketing" | "community distribution" | "开源发布" | "GitHub Star"
+<div align="center">
+
+<img src="assets/logo.png" alt="Gingiris Logo" width="120" />
+
+# Open Source Launch Marketing Playbook
+
+### Complete SOP for OSS launches — GitHub star growth, KOL partnerships, Reddit marketing, community distribution
+
+[![GitHub stars](https://img.shields.io/github/stars/Gingiris/gingiris-opensource?style=social)](https://github.com/Gingiris/gingiris-opensource/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
+**[English](#english) | [中文](#中文版) | [日本語](references/ja/README.md) | [한국어](references/ko/README.md)**
+
+</div>
+
 ---
 
-# 开源项目发布整合营销行动手册
+## ⭐ Star This Repo
 
-> 🌍 **Language / 语言**: [中文](#中文版) | [English](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/README.md) | [日本語](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/README.md) | [한국어](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/README.md)
+<img width="100%" src="assets/star.png" alt="Star this repo" />
+
+If you find this playbook useful, a GitHub Star ⭐ helps others discover it!
+
+---
+
+## Why This Playbook?
+
+From the team behind [AFFiNE](https://github.com/toeverything/AFFiNE) (60k+ stars). This playbook contains the exact strategies that achieved:
+
+| Metric | Target |
+|--------|--------|
+| 🚀 Launch Day Stars | 500+ |
+| ⭐ First Week Stars | 1,000+ |
+| 📈 Daily New Stars (Week 1) | 100+ |
+| 🎬 KOL Quotes | 100-150 (5 days) |
+| 📱 Reddit Posts | 3-5 subreddits daily |
+| 💬 Community Shares | 50-100 groups daily |
+
+---
+
+## English
+
+> Version: 5.0 (Final) | Author: Iris (生姜iris)
+
+### Core Philosophy
+
+> The essence of open source: ask developers to contribute **influence** (love), and ask B2B customers to contribute **money** 💰. Through proper SOP operations, open sourcing can convert into hundreds or thousands of stars and bring many SMB leads. **Prepare your business model before open sourcing** — otherwise you'll waste the traffic this action brings.
+
+### Overall Timeline
+
+| Phase | Timing | Core Tasks |
+|:---|:---|:---|
+| Strategic Planning | T-4 weeks | Positioning, value proposition, business model |
+| Asset Preparation | T-3 weeks | GitHub README, website, PR materials, docs |
+| Channel Preparation | T-2 weeks | KOL outreach, Reddit accounts, group organization |
+| Team Assignment | T-1 week | Budget approval, task allocation, communication |
+| Launch Sprint | T-3 days | Copy confirmation, automation setup, final check |
+| 🚀 **Launch Day** | T-0 | Multi-channel concentrated exposure, trigger flywheel |
+| Sustained Operations | T+1 to T+7 | 100+ stars daily, KOL quote bombardment |
+
+### Detailed Guides (English)
+
+| Topic | File |
+|:---|:---|
+| Pre-Launch Preparation SOP | [references/en/preparation.md](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/preparation.md) |
+| Launch Day Checklist | [references/en/launch-day.md](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/launch-day.md) |
+| Post-Launch Operations | [references/en/post-launch.md](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/post-launch.md) |
+| KOL Partnership List | [references/en/kol-list.md](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/kol-list.md) |
+| Channel Resources | [references/en/channels.md](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/channels.md) |
+| Copy Templates | [references/en/templates.md](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/templates.md) |
 
 ---
 
@@ -25,18 +78,6 @@ description: |
 ### 核心理念
 
 > 开源的本质是，请 developer 贡献爱（就是影响力），请 to B 客户贡献钱💰。开源这个 action 经过 SOP 的运营可以转化几百几千 star，带来很多 SMB 的 leads。**准备好商业模式再开源，才能承接住开源这个 action 带来的流量，避免浪费。**
-
-### 总体时间线
-
-| 阶段 | 时间节点 | 核心任务 |
-|:---|:---|:---|
-| 战略规划 | T-4周 | 定位、价值主张、商业模式 |
-| 资产准备 | T-3周 | GitHub Readme、官网、PR稿、文档 |
-| 渠道准备 | T-2周 | KOL建联、Reddit账号、群组整理 |
-| 团队分工 | T-1周 | 预算审批、任务分配、沟通机制 |
-| 发布冲刺 | T-3天 | 文案确认、自动化设置、最终检查 |
-| 🚀 **发布日** | T-0 | 多渠道集中曝光，触发流量飞轮 |
-| 持续运营 | T+1~T+7 | 每日100+ Star，KOL Quote轰炸 |
 
 ### 详细指南（中文）
 
@@ -53,24 +94,28 @@ description: |
 
 ## Quick Navigation (All Languages)
 
-| 🇨🇳 中文 | 🇺🇸 English | 🇯🇵 日本語 | 🇰🇷 한국어 |
+| 🇺🇸 English | 🇨🇳 中文 | 🇯🇵 日本語 | 🇰🇷 한국어 |
 |:---|:---|:---|:---|
-| [发布准备](https://github.com/Gingiris/gingiris-opensource/blob/main/references/preparation.md) | [Preparation](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/preparation.md) | [準備段階](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/preparation.md) | [준비 단계](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/preparation.md) |
-| [发布日](https://github.com/Gingiris/gingiris-opensource/blob/main/references/launch-day.md) | [Launch Day](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/launch-day.md) | [ローンチ日](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/launch-day.md) | [런칭일](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/launch-day.md) |
-| [发布后运营](https://github.com/Gingiris/gingiris-opensource/blob/main/references/post-launch.md) | [Post-Launch](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/post-launch.md) | [ローンチ後](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/post-launch.md) | [런칭 후](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/post-launch.md) |
-| [KOL清单](https://github.com/Gingiris/gingiris-opensource/blob/main/references/kol-list.md) | [KOL List](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/kol-list.md) | [KOLリスト](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/kol-list.md) | [KOL 목록](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/kol-list.md) |
-| [渠道资源](https://github.com/Gingiris/gingiris-opensource/blob/main/references/channels.md) | [Channels](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/channels.md) | [チャネル](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/channels.md) | [채널](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/channels.md) |
-| [文案模板](https://github.com/Gingiris/gingiris-opensource/blob/main/references/templates.md) | [Templates](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/templates.md) | [テンプレート](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/templates.md) | [템플릿](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/templates.md) |
+| [Preparation](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/preparation.md) | [发布准备](https://github.com/Gingiris/gingiris-opensource/blob/main/references/preparation.md) | [準備段階](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/preparation.md) | [준비 단계](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/preparation.md) |
+| [Launch Day](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/launch-day.md) | [发布日](https://github.com/Gingiris/gingiris-opensource/blob/main/references/launch-day.md) | [ローンチ日](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/launch-day.md) | [런칭일](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/launch-day.md) |
+| [Post-Launch](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/post-launch.md) | [发布后运营](https://github.com/Gingiris/gingiris-opensource/blob/main/references/post-launch.md) | [ローンチ後](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/post-launch.md) | [런칭 후](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/post-launch.md) |
+| [KOL List](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/kol-list.md) | [KOL清单](https://github.com/Gingiris/gingiris-opensource/blob/main/references/kol-list.md) | [KOLリスト](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/kol-list.md) | [KOL 목록](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/kol-list.md) |
+| [Channels](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/channels.md) | [渠道资源](https://github.com/Gingiris/gingiris-opensource/blob/main/references/channels.md) | [チャネル](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/channels.md) | [채널](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/channels.md) |
+| [Templates](https://github.com/Gingiris/gingiris-opensource/blob/main/references/en/templates.md) | [文案模板](https://github.com/Gingiris/gingiris-opensource/blob/main/references/templates.md) | [テンプレート](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ja/templates.md) | [템플릿](https://github.com/Gingiris/gingiris-opensource/blob/main/references/ko/templates.md) |
 
 ---
 
-## 核心目标
+## About the Author
 
-| 指标 | 目标 |
-|:---|:---|
-| **发布日 Star** | 500+ |
-| **首周 Star** | 1,000+ |
-| **每日新增 Star** | ≥100（T+1 至 T+7） |
-| **KOL Quote** | 100-150 个（5天内） |
-| **Reddit 发帖** | 每天 3-5 个 Subreddit |
-| **群组分发** | 每天 50-100 个群组 |
+**Iris (生姜iris)** — Former cofounder & COO of AFFiNE, grew the project from 0 to 60k+ GitHub stars.
+
+- 🐦 Twitter: [@Gingiris_](https://twitter.com/Gingiris_)
+- 💼 LinkedIn: [Yipei Wei](https://www.linkedin.com/in/yipei-wei-550825105/)
+- 💬 Telegram: [@Iris_carrot](https://t.me/Iris_carrot)
+- 📧 Email: iris103195@gmail.com
+
+---
+
+## License
+
+MIT License - Use and adapt for your own open source launches!

@@ -1,15 +1,11 @@
 ---
 name: gingiris-opensource
 description: |
-  🇺🇸 Open Source Launch Marketing Playbook — Complete SOP from strategy to execution. GitHub star growth tactics, KOL partnership lists, Reddit marketing, community distribution across global channels.
-  
-  🇨🇳 开源项目发布整合营销手册 — 从战略到执行的完整 SOP。GitHub Star 增长策略、KOL 合作清单、Reddit 运营、海外群组分发。
-  
-  🇯🇵 オープンソースローンチマーケティングガイド — 戦略から実行までの完全SOP。GitHub Star成長戦略、KOLパートナーシップ、Redditマーケティング、グローバルコミュニティ配信。
-  
-  🇰🇷 오픈소스 런칭 마케팅 플레이북 — 전략부터 실행까지 완벽한 SOP. GitHub 스타 성장 전략, KOL 파트너십, Reddit 마케팅, 글로벌 커뮤니티 배포.
-  
-  Triggers: "open source launch" | "GitHub stars" | "OSS marketing" | "developer community" | "Reddit marketing" | "community distribution" | "开源发布" | "GitHub Star"
+  GitHub Stars Growth & Open Source Marketing Playbook — How to get 10k+ GitHub stars. Complete OSS launch strategy from AFFiNE (33k stars in 18 months). Covers: GitHub trending tactics, awesome-list submissions, Reddit r/programming marketing, HackerNews launches, developer community building, Discord/Slack growth, tech influencer outreach, documentation SEO.
+
+  🇨🇳 开源项目营销手册 | 🇯🇵 オープンソースマーケティング | 🇰🇷 오픈소스 마케팅
+
+  Keywords: GitHub stars, open source marketing, OSS launch, developer relations, DevRel, GitHub trending, awesome list, Reddit programming, HackerNews, developer community, 开源发布, GitHub Star 增长
 ---
 
 # 开源项目发布整合营销行动手册
@@ -74,3 +70,21 @@ description: |
 | **KOL Quote** | 100-150 个（5天内） |
 | **Reddit 发帖** | 每天 3-5 个 Subreddit |
 | **群组分发** | 每天 50-100 个群组 |
+
+---
+
+## 🔍 SEO & GEO 优化
+
+> 让开源项目在搜索引擎和 AI 搜索中持续被开发者发现
+
+开源项目的流量来源不仅是 GitHub，还有 Google/Bing 搜索和 AI 搜索（ChatGPT 推荐工具时会引用你的文档）：
+
+| 主题 | 说明 |
+|:---|:---|
+| [SEO/GEO 指南](references/seo-geo-guide.md) | GitHub README 优化、官网 SEO、IndexNow、AI 引用优化 |
+
+**核心要点**:
+- GitHub Description + Topics 优化，提升 GitHub 搜索排名
+- README 结构化 + 关键词，便于 AI 提取
+- 官网实施 IndexNow，新版本发布秒级索引
+- 创建 vs 竞品对比页，获取长尾流量
