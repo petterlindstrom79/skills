@@ -1,6 +1,8 @@
 ---
+version: "2.0.0"
 name: Liquidity Monitor
 description: "Monitor DEX liquidity pool depth, track liquidity changes, calculate LP yield, and estimate impermanent loss. Use when you need liquidity monitor capabilities. Triggers on: liquidity monitor."
+author: BytesAgain
 ---
 
 # Liquidity Monitor 💧
