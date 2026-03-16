@@ -1,9 +1,10 @@
 ---
 name: crawler
-version: 1.0.0
+version: "2.0.0"
 author: BytesAgain
 license: MIT-0
 tags: [crawler, tool, utility]
+description: "Crawler - command-line tool for everyday use"
 ---
 
 # Crawler
@@ -44,16 +45,20 @@ crawler status
 crawler export json
 ```
 
-## How It Works
-
-Processes input with built-in logic and outputs structured results. All data stays local.
-
-## Tips
-
 - Run `crawler help` for all commands
-- Data stored in `~/.local/share/crawler/`
-- No API keys required for basic features
-- Works offline
+crawler/`
 
 ---
 *Powered by BytesAgain | bytesagain.com*
+*Feedback & Feature Requests: https://bytesagain.com/feedback*
+
+- Run `crawler help` for all commands
+
+## Configuration
+
+Set `CRAWLER_DIR` to change data directory. Default: `~/.local/share/crawler/`
+
+## When to Use
+
+- Quick crawler tasks from terminal
+- Automation pipelines
