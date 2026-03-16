@@ -3,11 +3,16 @@
   "slug": "symptom-checker",
   "displayName": "Symptom Checker",
   "latest": {
-    "version": "2.2.0",
-    "publishedAt": 1773421873569,
-    "commit": "https://github.com/openclaw/skills/commit/85978636f5d7ae7f02f6f1b9c5cb733e2abae0f7"
+    "version": "1.0.7",
+    "publishedAt": 1773673971687,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.0",
+      "publishedAt": 1773421873569,
+      "commit": "https://github.com/openclaw/skills/commit/85978636f5d7ae7f02f6f1b9c5cb733e2abae0f7"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773242231579,

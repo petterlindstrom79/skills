@@ -1,15 +1,16 @@
 ---
+version: "2.0.0"
 name: symptom-checker
-version: 1.0.0
-description: 症状自查工具。症状分析、就医建议、预防措施、生活方式改善、症状追踪、急症识别。Symptom checker with analysis, when to see doctor, prevention, lifestyle tips, tracking, emergency recognition. ⚠️ 非医疗诊断工具。
+description: "症状自查工具。症状分析、就医建议、预防措施、生活方式改善、症状追踪、急症识别。Symptom checker with analysis, when to see doctor, prevention, lifestyle tips, tracking, emergency recognition. ⚠️ 非医疗诊断工具。. Use when you need symptom checker capabilities. Triggers on: symptom checker."
 author: BytesAgain
-tags: [symptom, health, medical, prevention, 症状, 健康, 自查, 就医, 预防, 急救]
 ---
 # symptom-checker
 
 症状自查工具。症状分析、就医建议、预防措施、生活方式改善、症状追踪、急症识别。Symptom checker with analysis, when to see doctor, prevention, lifestyle tips, tracking, emergency recognition. ⚠️ 非医疗诊断工具。
 
 ## 速查表
+
+See commands above.
 
 ## 命令列表
 
@@ -24,9 +25,7 @@ tags: [symptom, health, medical, prevention, 症状, 健康, 自查, 就医, 预
 | `lifestyle` | lifestyle |
 | `tracker` | tracker |
 
-
 > 💡 小技巧：先用 `help` 查看所有命令，再选择最适合的
-
 
 ## 专业建议
 
@@ -38,3 +37,22 @@ tags: [symptom, health, medical, prevention, 症状, 健康, 自查, 就医, 预
 
 ---
 *symptom-checker by BytesAgain*
+---
+💬 Feedback & Feature Requests: https://bytesagain.com/feedback
+Powered by BytesAgain | bytesagain.com
+
+## Examples
+
+```bash
+# Show help
+symptom-checker help
+
+# Run
+symptom-checker run
+```
+
+## Commands
+
+Run `symptom-checker help` to see all available commands.
+
+- Run `symptom-checker help` for all commands
