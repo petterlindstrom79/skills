@@ -3,11 +3,16 @@
   "slug": "notion-template",
   "displayName": "Notion Template",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1773447632401,
-    "commit": "https://github.com/openclaw/skills/commit/b58054672522723fa35111460c480980a4dd1808"
+    "version": "1.0.6",
+    "publishedAt": 1773666611810,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1773447632401,
+      "commit": "https://github.com/openclaw/skills/commit/b58054672522723fa35111460c480980a4dd1808"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1773317883764,
