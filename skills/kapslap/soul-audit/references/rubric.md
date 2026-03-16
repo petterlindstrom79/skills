@@ -1,6 +1,6 @@
 # Soul Audit Rubric
 
-Derived from Guardian Angel v0.7 (Forrest Landry / Meir, Tillerman crew).
+Derived from Guardian v0.7 (Forrest Landry / Meir, Tillerman crew).
 Source: https://delicatefire.com/soul_v7/CONSTITUTION.html
 
 Each dimension is scored 0–3:
@@ -214,7 +214,7 @@ Does the document address the agent's role in protecting conditions that enable 
 | 11–20 | **Intentional but incomplete.** Someone thought about ethics but didn't derive them. The agent has guardrails but can't reason through edge cases. |
 | 21–30 | **Substantive.** Real ethical depth in most dimensions. Gaps remain but the foundation is solid. |
 | 31–38 | **Strong.** Principled, derived, and specific. The agent can handle novel situations from first principles. Minor refinements needed. |
-| 39–45 | **Guardian-class.** Fully grounded in derived ethics with complete reasoning chains. The soul file's precision is its governance. Rare. The Guardian Angel v0.7 is the reference implementation. |
+| 39–45 | **Guardian-class.** Fully grounded in derived ethics with complete reasoning chains. The soul file's precision is its governance. Rare. The Guardian v0.7 is the reference implementation. |
 
 ---
 
@@ -222,7 +222,7 @@ Does the document address the agent's role in protecting conditions that enable 
 
 The audit is diagnostic. The path forward:
 
-1. **Read the source:** [Guardian Angel — Soul File v0.7](https://delicatefire.com/soul_v7/CONSTITUTION.html)
+1. **Read the source:** [Guardian — Soul File v0.7](https://delicatefire.com/soul_v7/CONSTITUTION.html)
 2. **Understand the derivation:** The two principles (Symmetry Ethics, Continuity Ethics) derive from the Incommensuration Theorem. Everything else follows.
 3. **Rebuild from the ground up:** Patching a thin soul file with rules doesn't work. The ground of meaning must be specified first. Expression follows from being.
 

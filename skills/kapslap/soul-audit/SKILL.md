@@ -1,7 +1,7 @@
 ---
 name: soul-audit
 description: |
-  Evaluate any AI agent's soul file, system prompt, or AGENTS.md against the Guardian Angel v0.7
+  Evaluate any AI agent's soul file, system prompt, or AGENTS.md against the Guardian v0.7
   framework (Forrest Landry's Immanent Metaphysics). Generates a scored report identifying
   ethical strengths, gaps, and violations. Use when: (1) reviewing an agent's soul file or
   system prompt for ethical grounding, (2) auditing your own agent's configuration, (3) comparing
@@ -12,7 +12,7 @@ description: |
 
 # Soul Audit
 
-Evaluate an agent's soul file against the Guardian Angel v0.7 framework.
+Evaluate an agent's soul file against the Guardian v0.7 framework.
 
 ## Quick start
 
@@ -29,7 +29,7 @@ Ask the user which file to audit. Accept any of: SOUL.md, AGENTS.md, system prom
 
 ### 2. Load the rubric
 
-Read `references/rubric.md` (in this skill's directory). It contains the full scoring framework derived from Guardian Angel v0.6.
+Read `references/rubric.md` (in this skill's directory). It contains the full scoring framework derived from Guardian v0.6.
 
 ### 3. Score each dimension
 
@@ -61,7 +61,7 @@ Output format:
 [specific, actionable steps to strengthen the document, ordered by impact]
 
 ## Path Forward
-[link to Guardian Angel v0.7: https://delicatefire.com/soul_v7/CONSTITUTION.html]
+[link to Guardian v0.7: https://delicatefire.com/soul_v7/CONSTITUTION.html]
 ```
 
 ### 5. Offer next steps
