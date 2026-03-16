@@ -1,6 +1,6 @@
 ---
 name: ad-campaign-manager
-version: "1.0.0"
+version: 1.0.18
 description: 广告投放管理 - 自动管理广告投放、优化ROI、生成报告。适合：营销人员、电商运营。
 license: MIT
 metadata:
