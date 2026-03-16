@@ -8,7 +8,7 @@ import os
 import sys
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -26,7 +26,11 @@ _DEFAULT_MODEL = "gemini-3.1-flash-image-preview"
 _DEFAULT_EDIT_MODEL = "gemini-3.1-flash-image-preview"
 _MODEL_ALIASES = {
     "香蕉2": _DEFAULT_MODEL,
+    "banana2": _DEFAULT_MODEL,
+    "banana-2": _DEFAULT_MODEL,
     "香蕉pro": "nano-banana-2",
+    "banana_pro": "nano-banana-2",
+    "bananapro": "nano-banana-2",
     "nano-banana-2": "nano-banana-2",
     "gemini-3.1-flash-image-preview": _DEFAULT_MODEL,
 }
@@ -135,7 +139,7 @@ def run_text_to_image(
     if not isinstance(items, list) or not items:
         raise RuntimeError(f"文生图返回格式异常: {data}")
 
-    image_bytes = _extract_image_bytes(items[0], client)
+    image_bytes = _extract_image_bytes(cast(dict[str, Any], items[0]), client)
     _save_image(image_bytes, output_path)
 
 
@@ -189,7 +193,7 @@ def run_image_to_image(
     if not isinstance(items, list) or not items:
         raise RuntimeError(f"图生图返回格式异常: {data}")
 
-    image_bytes = _extract_image_bytes(items[0], client)
+    image_bytes = _extract_image_bytes(cast(dict[str, Any], items[0]), client)
     _save_image(image_bytes, output_path)
 
 

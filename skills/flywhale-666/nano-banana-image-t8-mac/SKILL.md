@@ -4,9 +4,12 @@ triggers:
   - nanobanana
   - nano banana
   - 香蕉生图
+  - 香蕉生成
+  - 香蕉画图
   - banana生图
   - banana文生图
   - banana图生图
+  - banana生成
   - 香蕉文生图
   - 香蕉图生图
   - image generation test
