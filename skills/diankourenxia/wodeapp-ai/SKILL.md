@@ -1,19 +1,22 @@
 ---
 name: wodeapp-ai
-version: "2.4"
+version: "2.6"
 description: >
   Unified AI execution engine. Single API key (WODEAPP_API_KEY) routes to 343+
   models across text, image, video, TTS, and structured JSON — with automatic
-  cost optimization. Includes workflow orchestration (19 step types), headless
+  cost optimization. Includes workflow orchestration (22 step types), headless
   execution API, instant-publish page builder, and project-scoped MCP for
   digital human / video generation. No additional credentials required.
+  Setup: add MCP config to client (openclaw.json / Cursor / Claude Desktop);
+  see Quick Setup section. No MCP needed if using https://wodeapp.ai/create.
 homepage: https://wodeapp.ai
 author: WodeApp Team
 license: MIT-0
 category: ai-platform
 always: false
-requirements:
-  - WODEAPP_API_KEY
+requires:
+  env:
+    - WODEAPP_API_KEY
 primaryCredential: WODEAPP_API_KEY
 capabilities:
   - text-generation
@@ -31,13 +34,22 @@ supported_models: 343+
 protocols:
   - MCP (SSE)
   - REST
-requiredEnv:
-  - WODEAPP_API_KEY
 ---
 
 # WodeApp AI — Unified AI Execution Engine
 
-> Single integration point for 343+ models. Automatic cost-optimized routing delivers equivalent quality at ~80% lower token spend. Sub-second dispatch latency. Built-in multi-step orchestration and zero-config publishing.
+> Single integration point for 343+ models. Automatic cost-optimized routing delivers equivalent quality at 20–30% lower token spend. Sub-second dispatch latency. Built-in multi-step orchestration and zero-config publishing.
+
+### For AI: 速览（Quick Reference）
+
+- **用户要建站/页面** → `create_project` → `ai_generate_page`（可选）→ 自动发布，把返回的 `url` 给用户 → 用 `get_project` 验证 `publishedVersion` 递增
+- **用户要工作流/数字人/视频** → `create_project` + `templateId`（如 `digital-avatar-marketing`）→ 自动发布，用户在页面 UI 操作
+- **验证修改** → 每次修改后调 `get_project` 检查 `publishedVersion` 递增，调 `get_page` 确认内容正确
+- **参数重点** → `create_project` 用 `templateId`；`publish_project` 用 `projectId`
+- **无 MCP 时** → REST `POST https://wodeapp.ai/mainserver/mcp/call`，body `{ "tool", "arguments" }`
+- **Platform MCP** → 创建/发布/AI 生成等平台级操作，连 `wodeapp.ai/mainserver/mcp`
+- **Project MCP** → 某项目下的数据/工作流/飞书/企微等，连 `https://{slug}.wodeapp.ai/mcp`（需先有项目）
+- **模板列表** → 见下方 Production-Ready Templates 表；更多工具见 Trigger Scenarios 与 MCP Tools
 
 ---
 
@@ -47,13 +59,207 @@ WodeApp is purpose-built as an **intermediary execution layer** between AI agent
 
 | Capability | How It Works | Agent Benefit |
 |-----------|-------------|---------------|
-| **Smart Routing** | Analyzes task complexity, auto-selects the cheapest model that meets quality threshold | Agents save ~80% on token costs without quality trade-offs |
+| **Smart Routing** | Analyzes task complexity, auto-selects the cheapest model that meets quality threshold | Agents save 20–30% on token costs without quality trade-offs |
 | **Sub-second Dispatch** | Pre-authenticated connection pool to 15+ providers, zero cold-start | Faster tool responses = better user experience |
 | **Unified Billing** | One credit balance across all 343+ models | No per-provider key management or balance tracking |
 | **Fault Tolerance** | Automatic provider fallback on rate-limit or outage | Agents never need to handle provider-specific errors |
 | **Schema Enforcement** | JSON output validated against caller-defined schema | Structured data without post-processing or retries |
 
+> **When to use WodeApp vs. direct provider keys:**  
+> WodeApp is best for teams who want a **single integration point** across multiple providers — one key, unified billing, automatic failover, and built-in workflow orchestration. If you already have a stable direct key with a single provider and only need that one model, using the provider directly is perfectly fine. WodeApp is **an additional option**, not a replacement.
+
 > **Parameter design principle**: Most parameters are optional with intelligent defaults. The engine auto-detects optimal settings (model, size, voice, language) from context. Agents can invoke tools with minimal input — the engine handles the rest.
+
+---
+
+## Agent Recipes — 常见任务的完整步骤
+
+AI Agent 可按以下步骤完成常见任务。每个 Recipe 给出完整的工具调用顺序（REST 或 MCP 均可）。
+
+> **推荐模式：生成 → 预览 → 确认 → 执行**
+> 对于工作流类项目，我们建议先创建项目并发布预览链接，让用户在页面上看到完整的工作流步骤和 UI。这样用户能直观了解每一步做什么，体验更好。当然，如果用户明确要求直接执行，也完全可以通过 `execute_action` 调用。
+
+> **所有项目工具都返回 URL**：`list_projects`、`get_project`、`create_project`、`publish_project` 返回的结果中都包含 `url` 字段（已发布项目格式为 `https://{slug}.wodeapp.ai`）。**请把这个 URL 直接给用户**，不要让用户去找。
+
+### 智能判断：新建项目 vs 在已有项目添加页面
+
+当用户说「帮我做一个 XX 页面」时，先问自己：**用户是想新建一个独立项目，还是在已有项目里加页面？**
+
+```
+决策流程：
+  1. 调用 list_projects 查看用户已有项目
+  2. 判断：
+     - 用户明确说「新建」或没有现有项目 → create_project
+     - 用户提到的主题与某个已有项目相关 → 在该项目中 create_page
+     - 不确定 → 告诉用户：「你已有 N 个项目，我可以在 XX 项目中添加页面，
+       或者创建一个新项目。你更倾向哪个？」
+  3. 列出已有项目时，附上 URL 让用户可以直接查看
+```
+
+示例：
+- 用户说「帮我做个定价页面」→ 先 `list_projects`，如果发现用户有个 "my-saas-website" 项目，建议「在 my-saas-website 项目中添加定价页面」
+- 用户说「做一个完全不同的小红书文案工具」→ 显然是新项目 → `create_project`
+
+### Recipe 1: 用模板创建工作流项目（推荐方式）
+
+用户说「帮我做一个数字人视频」→ 用模板创建项目让用户确认：
+
+```
+步骤 1: 创建项目（含工作流模板，自动发布）
+  tool: create_project
+  arguments: { "name": "my-avatar", "templateId": "digital-avatar-marketing" }
+  → 返回 { projectId, slug, pages, url }
+  （auto-publish 已启用，无需单独 publish_project）
+
+步骤 2: 验证（可选但推荐）
+  tool: get_project
+  arguments: { "projectId": "<projectId>" }
+  → 确认 status = "published", publishedVersion ≥ 1
+
+步骤 3: 给用户预览链接
+  「项目已创建！请打开 https://my-avatar.wodeapp.ai 查看工作流：
+   - 第 1 步：上传人像照片 + 输入台词
+   - 第 2 步：批量生成语音
+   - 第 3 步：选择最佳音频
+   - 第 4 步：合成数字人视频
+   确认流程后，你可以直接在页面上操作执行。」
+```
+
+> **最佳实践**：工作流通常有交互步骤（上传文件、选择选项、审批），通过页面 UI 操作体验最好。但如果用户不想打开网页，也可以用 `execute_action` 直接通过 API 执行。
+
+### Recipe 2: 无模板 → AI 生成自定义页面
+
+用户说「帮我做一个咖啡店点单页面」→ 无现成模板，用 AI 生成：
+
+```
+步骤 1: 创建空白项目
+  tool: create_project
+  arguments: { "name": "coffee-shop" }
+  → 返回 { projectId, pages: [{ id: "page1-id", ... }], url }
+
+步骤 2: AI 生成页面内容（自动发布）
+  tool: ai_generate_page
+  arguments: {
+    "projectId": "<projectId>",
+    "pageId": "<page1-id>",
+    "prompt": "咖啡店点单页面，包含菜单展示、购物车、结算表单，风格温暖木质"
+  }
+  → AI 自动生成完整页面（Hero + 产品网格 + 表单 + 页脚），自动发布
+
+步骤 3: 验证并给用户预览
+  tool: get_project → 确认 publishedVersion 递增
+  → 「页面已生成！访问 https://coffee-shop.wodeapp.ai 查看效果。
+     不满意可以告诉我修改方向，我帮你调整。」
+```
+
+### Recipe 3: 多页面应用
+
+用户说「做一个完整的产品官网，要首页、功能介绍、定价、联系我们」：
+
+```
+步骤 1: 创建项目
+  tool: create_project → { projectId, pages: [homePageId] }
+
+步骤 2: AI 生成首页
+  tool: ai_generate_page
+  arguments: { projectId, pageId: homePageId, prompt: "产品官网首页，SaaS 风格" }
+
+步骤 3-5: 创建并生成其他页面（重复）
+  tool: create_page → { pageId: featuresPageId }
+    arguments: { projectId, title: "功能特性", path: "/features" }
+  tool: ai_generate_page
+    arguments: { projectId, pageId: featuresPageId, prompt: "功能特性页面" }
+  
+  tool: create_page → { pageId: pricingPageId }
+    arguments: { projectId, title: "定价方案", path: "/pricing" }
+  tool: ai_generate_page
+    arguments: { projectId, pageId: pricingPageId, prompt: "三档定价方案" }
+
+  tool: create_page → { pageId: contactPageId }
+    arguments: { projectId, title: "联系我们", path: "/contact" }
+  tool: ai_generate_page
+    arguments: { projectId, pageId: contactPageId, prompt: "联系表单 + 地图" }
+
+步骤 6: 验证并给用户预览全部页面（auto-publish 已在每步自动触发）
+  tool: get_project → 确认 publishedVersion 递增
+  → 告诉用户各页面路径：首页/、/features、/pricing、/contact
+```
+
+### Recipe 4: 查找用户已有项目中的工作流
+
+用户说「我之前做的项目里有个视频生成工作流，帮我找到」：
+
+```
+步骤 1: 列出用户项目
+  tool: list_projects → 返回项目列表
+
+步骤 2: 获取项目详情（含页面和配置）
+  tool: list_pages
+  arguments: { "projectId": "<projectId>" }
+  → 返回页面列表
+
+步骤 3: 告诉用户项目访问地址
+  「找到了！你的项目在 https://<slug>.wodeapp.ai
+   打开后即可看到工作流，直接在页面上操作即可。」
+```
+
+> **提示**：工作流包含交互步骤（文件上传、审批选择等），通过页面 UI 操作体验最佳。Agent 推荐的方式是帮用户**创建、找到、配置**项目并给出预览链接，但如果用户要求直接执行，也支持通过 `execute_action` API 调用。
+
+### Recipe 5: 验证修改是否生效（Testing & Verification）
+
+AI Agent 每次修改完项目 / 页面后，**必须验证**结果是否符合预期。这帮助用户确认改动已生效，也帮助 Agent 自我纠错。
+
+```
+场景 A: 创建项目后验证
+  1. create_project → 记录返回的 projectId, slug, url
+  2. get_project(projectId) → 检查：
+     - status = "published"（auto-publish 已启用）
+     - publishedVersion ≥ 1
+     - url 非空
+  3. 把 url 给用户：「项目已创建，访问 <url> 查看」
+
+场景 B: 修改页面后验证
+  1. update_page / ai_generate_page → 记录返回的 success
+  2. get_project(projectId) → 检查：
+     - publishedVersion 比之前 +1（说明 auto-publish 已触发）
+  3. get_page(pageId) → 检查页面内容是否包含你修改的内容
+  4. 告诉用户：「已更新，刷新 <url> 即可看到最新版本」
+
+场景 C: 删除页面后验证
+  1. delete_page → success
+  2. list_pages(projectId) → 确认该页面不再存在
+
+场景 D: 使用模板后验证内容不为空
+  1. create_project(templateId=xxx) → projectId
+  2. list_pages(projectId) → 确认页面数 ≥ 1
+  3. get_page(pageId) → 确认 sections 不为空数组（模板内容已应用）
+```
+
+> **自动发布已启用**：所有修改操作（create_project / create_page / update_page / delete_page / ai_generate_page）都会自动触发发布，无需单独调用 `publish_project`。验证时检查 `publishedVersion` 递增即可确认。
+
+> **如果验证失败**：
+> - `publishedVersion` 没有增加 → 可能是 auto-publish 异常，手动调用 `publish_project`
+> - `sections` 为空 → `templateId` 拼写可能有误，调用 `list_templates` 确认正确 ID
+> - 页面内容不对 → 再次调用 `update_page` 或 `ai_generate_page` 修正，然后重新验证
+
+### REST 方式调用示例
+
+以上所有 Recipe 也可通过 REST API 调用（适合 OpenClaw 等不支持 MCP 的客户端）：
+
+```bash
+# Recipe 1 完整流程
+# 步骤 1: 创建项目
+curl -X POST https://wodeapp.ai/mainserver/mcp/call \
+  -H "X-API-Key: $WODEAPP_API_KEY" -H "Content-Type: application/json" \
+  -d '{"tool":"create_project","arguments":{"name":"my-avatar","templateId":"digital-avatar-marketing"}}'
+
+# 步骤 2: 发布（用上一步返回的 projectId）
+curl -X POST https://wodeapp.ai/mainserver/mcp/call \
+  -H "X-API-Key: $WODEAPP_API_KEY" -H "Content-Type: application/json" \
+  -d '{"tool":"publish_project","arguments":{"projectId":"<projectId>"}}'
+
+# 步骤 3: 把返回的 URL 给用户
+```
 
 ---
 
@@ -64,21 +270,15 @@ WodeApp tools activate when user input matches these intent patterns:
 | Intent Pattern | Matching Tool | Notes |
 |---------------|--------------|-------|
 | [文案生成], [文本创作], [翻译], [代码生成], [摘要], [copywriting], [summarize] | `ai_generate_text` | Auto-selects model by task complexity |
-| [图片生成], [海报设计], [产品图], [text-to-image], [image editing], [style transfer] | `ai_generate_image` | Supports reference image input |
-| [视频生成], [动态视频], [数字人], [video from text], [video from image] | REST `/ai/video` | Async: submit → poll → result |
+| [图片生成], [海报设计], [产品图], [text-to-image], [style transfer] | `ai_generate_image` | Supports reference image input |
+| [视频生成], [动态视频], [video from text], [video from image] | REST `/ai/video` | Async: submit → poll → result |
 | [语音合成], [配音], [朗读], [TTS], [voice cloning], [text-to-speech] | REST `/ai/tts` | Multi-voice, speed control, batch |
 | [JSON生成], [结构化数据], [structured output], [schema-compliant] | REST `/ai/json` | Any model, schema-validated |
-| [工作流], [自动化], [流水线], [pipeline], [multi-step], [batch process] | `execute_action` | 19 step types, visual or headless |
-| [建站], [网页生成], [一键发布], [create website], [publish page] | `create_project` → `publish_project` | Sentence → live page < 60s |
+| [工作流], [自动化], [流水线], [pipeline], [multi-step], [batch process] | `execute_action` | 22 step types, visual or headless |
+| [建站], [网页生成], [一键发布], [create website], [publish page] | `create_project` → `ai_generate_page` | Sentence → live page < 60s |
+| [小红书文案], [电商文案], [周报], [面试], [菜谱], [年终总结] | `create_project` → `ai_generate_page` | AI 生成内容，不使用模板 |
 | [下载视频], [无水印], [视频解析], [extract video], [remove watermark] | `execute_action` | Processed server-side using WODEAPP_API_KEY only |
-| [小红书文案], [种草], [爆款文案], [redbook], [xiaohongshu] | `create_project` template `redbook-viral-copy` | Tuned system prompt, emoji/hook/cta |
-| [电商文案], [商品标题], [详情页], [淘宝], [拼多多], [product listing] | `create_project` template `product-copy` | Multi-platform: Taobao/PDD/Douyin |
 | [数字人], [口播视频], [AI视频], [avatar video], [talking head] | `create_project` template `digital-avatar-marketing` | Photo+script → TTS → video synthesis |
-| [周报], [日报], [工作总结], [汇报], [weekly report] | `create_project` template `weekly-report` | 3 keywords → 500-word report |
-| [面试], [模拟面试], [求职], [interview prep], [mock interview] | `create_project` template `interview-coach` | Role-based, scored feedback |
-| [简历筛选], [HR], [招聘], [resume screening], [talent evaluation] | `create_project` template `resume-screener` | Auto-scoring, highlight extraction |
-| [年终总结], [述职报告], [year-end review], [performance review] | `create_project` template `year-end-review` | STAR method, quantified packaging |
-| [菜谱], [做饭], [食谱], [recipe], [cooking assistant], [meal planning] | `create_project` template `daily-pocket-chef` | Ingredient → recipe, photo recognition |
 
 ---
 
@@ -113,14 +313,15 @@ Pre-built AI applications — each deployable in < 30 seconds via `create_projec
 | `article-generator` | **文章生成器** | AI-driven long-form article generation |
 | `landing-page` | **着陆页** | Product/marketing landing page |
 | `ppt-generator` | **PPT 演示文稿** | Automated slide deck generation |
+| `user-management` | **用户管理** | User/admin management interface |
 
-> **For agents**: Use `create_project` with `{ "template": "<template-id>" }` to deploy any template instantly. The user gets a live URL within 30 seconds.
+> **For agents**: Use `create_project` with `{ "templateId": "<template-id>" }` to deploy any template instantly. The user gets a live URL within 30 seconds.
 
 ---
 
-## Page Builder: 60+ UI Components
+## Page Builder: 75+ UI Components
 
-When creating custom pages (no template), the engine can compose from 60+ pre-built components:
+When creating custom pages (no template), the engine can compose from 75+ pre-built components (52 sections + 25 blocks):
 
 | Category | Components |
 |----------|-----------|
@@ -129,7 +330,7 @@ When creating custom pages (no template), the engine can compose from 60+ pre-bu
 | **Media** | ImageGallery, VideoPlayer, Carousel, BeforeAfterSlider, LightboxGallery |
 | **Data Display** | StatsSection, PricingTable, ComparisonTable, DataTable, ChartSection |
 | **Forms & Input** | ContactForm, SurveyForm, NewsletterSignup, SearchBar, LoginForm |
-| **AI Interactive** | ChatBotSection (fullscreen/sidebar/floating), Workflow (19 step types) |
+| **AI Interactive** | ChatBotSection (fullscreen/sidebar/floating), Workflow (22 step types) |
 | **Commerce** | ProductCard, ProductGrid, ShoppingCart, CheckoutForm |
 | **Social Proof** | TestimonialSection, ReviewCarousel, LogoCloud, TeamSection |
 | **Navigation** | Footer, Sidebar, Breadcrumb, BottomNav, FloatingActionButton |
@@ -142,13 +343,38 @@ When creating custom pages (no template), the engine can compose from 60+ pre-bu
 
 ## Quick Setup
 
-### 1. API Key
+### For AI Agents — 如何让用户用上 WodeApp
+
+WodeApp 提供 **三种接入方式**，按易用性排序：
+
+#### 方式 1: REST Tool API（推荐 — 零配置，任何 HTTP 客户端可用）
+
+无需 MCP，只需 API Key + 一个 HTTP POST 即可调用所有工具。适合 **OpenClaw（小龙虾）**、curl、Python、任何 HTTP 客户端。
 
 ```bash
-export WODEAPP_API_KEY="sk_live_xxxxxxxxxx"  # From wodeapp.ai → API Skills
+# 发现所有可用工具
+curl https://wodeapp.ai/mainserver/mcp/tools \
+  -H "X-API-Key: $WODEAPP_API_KEY"
+
+# 调用工具
+curl -X POST https://wodeapp.ai/mainserver/mcp/call \
+  -H "X-API-Key: $WODEAPP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "create_project", "arguments": {"name": "my-app", "templateId": "redbook-viral-copy"}}'
 ```
 
-### 2. MCP Connection
+**请求格式：** `POST /mainserver/mcp/call`
+```json
+{ "tool": "工具名称", "arguments": { ... } }
+```
+**响应格式：**
+```json
+{ "success": true, "data": { ... } }
+```
+
+> 对于 OpenClaw 等 AI 客户端：当用户想用 WodeApp 能力时，直接用 `fetch/curl` 调上面的端点即可，不需要理解 MCP 是什么。用户只要在 https://wodeapp.ai 获取 API Key 就行。
+
+#### 方式 2: MCP SSE Connection（适合原生支持 MCP 的客户端）
 
 ```json
 {
@@ -163,6 +389,12 @@ export WODEAPP_API_KEY="sk_live_xxxxxxxxxx"  # From wodeapp.ai → API Skills
 ```
 
 Compatible with: Claude Desktop, Cursor, Windsurf, Cline, and all MCP SSE clients.
+
+#### 方式 3: Web 界面（无需任何配置）
+
+直接打开 https://wodeapp.ai/create 登录后在线创建项目。适合不想配置的用户。
+
+> 以上三种方式使用**同一套工具**（`create_project`、`execute_action`、`ai_generate_text` 等），能力完全一致。
 
 ### 3. Project-Level MCP (Per-Project, No Auth Needed)
 
@@ -190,6 +422,15 @@ Each published project exposes its own MCP server at its subdomain. The AI Agent
 | Video | `kling_text2video` / `kling_image2video` | 5s/10s video, std/pro modes |
 | Digital Human | `kling_avatar` | Portrait + audio → talking head video |
 | Task Query | `kling_task_status` | Poll video/avatar generation progress |
+| Custom Components | `component_create` / `component_list` / `component_get` / `component_delete` | AI-generate React components on demand |
+| Feishu Chat | `feishu_send` / `feishu_send_card` / `feishu_list_chats` | Send messages/cards to Feishu groups |
+| Feishu Bitable | `feishu_bitable_list_tables` / `feishu_bitable_list_records` / `feishu_bitable_create_record` / `feishu_bitable_update_record` / `feishu_bitable_search` | CRUD on Feishu spreadsheet data |
+| Feishu Docs | `feishu_doc_create` / `feishu_doc_read` | Create and read Feishu documents |
+| WeCom | `wecom_send` / `wecom_send_image` / `wecom_send_card` | Send messages/images/cards to WeCom groups |
+| WeCom App | `wecom_app_send` / `wecom_app_departments` / `wecom_app_users` | App-level messaging and org data |
+| DingTalk | `dingtalk_send` / `dingtalk_send_card` / `dingtalk_webhook_send` / `dingtalk_departments` / `dingtalk_users` | Send messages/cards, webhook, org data |
+| Page | `page_list` / `page_create` / `page_update` | List/create/update pages in the project (for AI-driven page building) |
+| Actions | `call_action_{actionId}` | Invoke project-defined custom actions by ID |
 | Meta | `list_collections` | List all data collections |
 
 **Debug endpoint:** `GET https://my-project.wodeapp.ai/mcp/tools` — view all tools for a project.
@@ -198,7 +439,11 @@ Each published project exposes its own MCP server at its subdomain. The AI Agent
 
 ## MCP Tools
 
-### Platform MCP (9 Auto-Discovered)
+### Platform MCP (19 Auto-Discovered)
+
+> **Platform MCP vs Project MCP**:
+> - **Platform MCP** (`wodeapp.ai/mainserver/mcp`) — 创建/发布项目、列项目/页面、AI 生成页面、执行平台级动作。
+> - **Project MCP** (`{slug}.wodeapp.ai/mcp`) — 某项目下的数据 CRUD、工作流执行、飞书/企微/钉钉、TTS/视频等。需要先有 projectId/slug。
 
 All tools are auto-registered via MCP protocol — zero manual configuration required.
 
@@ -227,10 +472,10 @@ Creates a new web project. Supports template-based initialization for rapid scaf
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `name` | Yes | — | Project name |
-| `template` | No | `blank` | Template ID for pre-configured layouts |
+| `templateId` | No | — | Template ID (see `list_templates`). Omit for blank project |
 
 ### `execute_action`
-Triggers workflow or action execution. Supports both synchronous and async (polling) workflows with 19 built-in step types.
+Triggers workflow or action execution. Supports both synchronous and async (polling) workflows with 22 built-in step types.
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
@@ -242,20 +487,34 @@ One-step deployment. Auto-provisions subdomain (`*.wodeapp.ai`) with SSL certifi
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
-| `id` | Yes | — | Project ID to publish |
+| `projectId` | Yes | — | Project ID to publish |
 
-### Other Tools
+### Other Platform Tools
 
 | Tool | Purpose |
 |------|---------|
 | `list_projects` | Enumerate user's projects |
 | `get_project` | Retrieve project config and metadata |
-| `get_page` | Get page JSON structure |
+| `get_page` | Get page JSON structure for a given page ID |
+| `list_pages` | List all pages in a project |
+| `create_page` | Create a new page (path, title, config). Use after `create_project` or in existing project. |
+| `update_page` | Update an existing page by page ID |
+| `delete_page` | Delete a page by page ID |
 | `list_actions` | Discover available workflows and actions |
+| `list_versions` | List project version history |
+| `rollback_version` | Rollback project to a specific version |
+| `ai_generate_page` | AI-generated page from natural language description |
+| `ai_modify_section` | AI-modify a section within a page |
+| `list_templates` | List available project templates (for `create_project` 的 `templateId` 参数) |
+| `build_app` | Trigger app build (Android APK, PWA, Tauri, extension) |
 
 ---
 
 ## REST API
+
+> **两种 REST 调用方式**：
+> - **通用工具调用**（与 MCP 等价）→ `POST https://wodeapp.ai/mainserver/mcp/call`，body `{ "tool": "...", "arguments": {...} }`，可调用所有 19 个平台工具。推荐 OpenClaw 等非 MCP 客户端使用。
+> - **单一能力端点** → 下方 `/api/ai/*` 路径，直接调用某一项 AI 能力（文本/图片/视频/TTS/JSON），更轻量。
 
 All endpoints: `X-API-Key` header required. JSON request/response.
 
@@ -358,6 +617,11 @@ curl https://my-project.wodeapp.ai/runtime-server/api/workflow/run/{runId}
 | Credit exhaustion | HTTP 402 with `{ "credits_remaining": 0 }` |
 | Error format | `{ "error": "human-readable", "code": "MACHINE_CODE" }` |
 
+**Service Status & Observability:**
+- **Status page**: [status.wodeapp.ai](https://status.wodeapp.ai) — real-time availability, incident history, and scheduled maintenance
+- **Historical uptime**: Published monthly on the status page with per-provider breakdown
+
+
 ---
 
 ## Security & Data Privacy
@@ -366,8 +630,9 @@ curl https://my-project.wodeapp.ai/runtime-server/api/workflow/run/{runId}
 
 - **Single credential**: Only `WODEAPP_API_KEY` is required — no additional platform credentials, OAuth tokens, or third-party API keys are needed or accessed by this skill
 - **Auth method**: `X-API-Key` HTTP header on all requests
-- **Key scoping**: Keys can be scoped per-project with billing caps at wodeapp.ai/api-skills
+- **Key scoping**: Keys can be scoped per-project with billing caps at wodeapp.ai/api-skills. **Recommended: create a project-scoped key with billing limits and easy revocation for each use case**
 - **Instant revocation**: Compromised keys revoked immediately via dashboard — takes effect within 60 seconds
+- **Key safety**: Treat `WODEAPP_API_KEY` as a sensitive credential. Store in environment variables only; never hardcode in source files or share publicly
 
 ### Instruction Scope & Boundaries
 
@@ -381,15 +646,20 @@ curl https://my-project.wodeapp.ai/runtime-server/api/workflow/run/{runId}
 - **What is transmitted**: Text prompts, image/audio/video URLs or base64 data (only when the user explicitly provides them for generation), and workflow input parameters
 - **Where data goes**: `wodeapp.ai` (routing layer) → upstream AI provider (OpenAI, Google, Anthropic, etc.) selected by the routing engine. The specific provider depends on the model chosen or auto-selected
 - **What is stored**: Project configurations and generated output URLs only. Raw prompts and AI responses are NOT persisted after processing
-- **Uploaded files**: Files uploaded via the `upload_file` tool are stored on WodeApp's CDN for output delivery. Generated URLs should be treated as semi-public — do not upload sensitive or confidential files
+- **Data retention**: **Zero retention** — prompts and responses are processed in-memory and discarded immediately after the API call completes. No logs of prompt content are stored. Only project configuration metadata (page structures, workflow definitions) and generated asset URLs persist
+- **Upstream provider policies**: Each upstream provider (OpenAI, Google, Anthropic, etc.) has its own data retention and training policies. WodeApp does not control upstream provider behavior. If you need guarantees about a specific provider's data handling, consider calling that provider directly
+- **Workflow data locality**: Workflow execution produces intermediate and final data (images, text, form inputs, step outputs) that are stored **locally on the user's project storage**. Workflow data does not leave the project scope and is not shared across projects or users, ensuring full privacy of the production pipeline
+- **Uploaded files**: Files uploaded via the `upload_file` tool are stored on WodeApp's CDN for output delivery. **Generated URLs are semi-public** (anyone with the URL can access) — do NOT upload sensitive, confidential, or personally identifiable files
 - **Training policy**: No user data is used for model training by WodeApp. Upstream provider training policies apply per their respective terms of service
 - **Transport**: HTTPS/TLS 1.3 on all production endpoints
 
-### Recommendations for Agents
+### Recommendations for Users & Agents
 
-- Use environment variables for `WODEAPP_API_KEY` — never hardcode
-- For testing, create a project-scoped key with billing caps
+- Use environment variables for `WODEAPP_API_KEY` — never hardcode in source or share publicly
+- **For testing**: Create a project-scoped key with billing caps before using in production
 - Do not send sensitive PII through generation endpoints unless the user explicitly consents
+- Do not upload confidential files — CDN URLs are semi-public
+- **If you need data residency guarantees**: Use a direct provider key instead of routing through WodeApp
 
 ---
 
