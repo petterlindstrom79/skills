@@ -3,9 +3,15 @@
   "slug": "agentearth",
   "displayName": "Agentearth",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1773200103028,
-    "commit": "https://github.com/openclaw/skills/commit/eb3d6647922c35385cca96a95debfae4fac610cf"
+    "version": "1.0.6",
+    "publishedAt": 1773301059294,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1773200103028,
+      "commit": "https://github.com/openclaw/skills/commit/eb3d6647922c35385cca96a95debfae4fac610cf"
+    }
+  ]
 }
