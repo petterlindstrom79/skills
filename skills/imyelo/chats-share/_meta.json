@@ -1,13 +1,18 @@
 {
   "owner": "imyelo",
   "slug": "chats-share",
-  "displayName": "Chats Share",
+  "displayName": "Chat share",
   "latest": {
-    "version": "0.5.0",
-    "publishedAt": 1772787832100,
-    "commit": "https://github.com/openclaw/skills/commit/edf6f6bd77f371055e446440781d87731619b188"
+    "version": "0.7.0",
+    "publishedAt": 1773586898002,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.5.0",
+      "publishedAt": 1772787832100,
+      "commit": "https://github.com/openclaw/skills/commit/edf6f6bd77f371055e446440781d87731619b188"
+    },
     {
       "version": "0.4.0",
       "publishedAt": 1772718340718,
