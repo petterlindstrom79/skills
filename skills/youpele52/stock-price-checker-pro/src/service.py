@@ -219,6 +219,9 @@ def format_output(data: dict) -> str:
         if data.get("day_low") is not None
         else "N/A"
     )
+    range_blocks = "\n\n".join(
+        format_range(window["label"], data[window["key"]]) for window in RANGE_WINDOWS
+    )
 
     return (
         f"{data['symbol']}: {data['company_name']}\n"
@@ -228,13 +231,7 @@ def format_output(data: dict) -> str:
         f"Today High: {day_high_str}\n"
         f"Today Low:  {day_low_str}\n"
         f"\n"
-        f"{format_range('2W', data['range_2w'])}\n"
-        f"\n"
-        f"{format_range('1M', data['range_1m'])}\n"
-        f"\n"
-        f"{format_range('6M', data['range_6m'])}\n"
-        f"\n"
-        f"{format_range('52W', data['range_52w'])}\n"
+        f"{range_blocks}\n"
         f"\n"
         f"{format_recent_news(data['news'])}\n"
         f"\n"

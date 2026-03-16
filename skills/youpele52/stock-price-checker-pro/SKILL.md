@@ -10,7 +10,7 @@ metadata: {"clawdbot":{"emoji":"📈","requires":{"bins":["uv"]}}}
 ## When to use
 - User asks for the current stock price of a company or ETF.
 - User asks about daily price movement, change, or % change.
-- User asks about 52-week high/low, 2W, 1M, or 6M price ranges.
+- User asks about 52-week high/low, 2W, 1M, 3M, or 6M price ranges.
 - User asks about trading volume or market cap.
 - User wants recent company-specific news headlines.
 - User asks about upcoming earnings, ex-dividend, or dividend dates.
@@ -69,7 +69,7 @@ uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py ETH-
 - Current price, daily change & % change vs previous close
 - Volume vs average volume and market cap
 - Today's high / low
-- 2W, 1M, 6M, 52W high / low ranges
+- 2W, 1M, 3M, 6M, 52W high / low ranges
 - Recent company-specific news headlines with links
 - Upcoming events: earnings date, ex-dividend date, dividend payment
 

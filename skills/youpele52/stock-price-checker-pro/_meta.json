@@ -3,11 +3,16 @@
   "slug": "stock-price-checker-pro",
   "displayName": "Stock Price Checker Pro",
   "latest": {
-    "version": "0.1.4",
-    "publishedAt": 1773151650742,
-    "commit": "https://github.com/openclaw/skills/commit/2af82ada7e6f36783262833b02cbff1a9a222acb"
+    "version": "0.1.5",
+    "publishedAt": 1773496918803,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.4",
+      "publishedAt": 1773151650742,
+      "commit": "https://github.com/openclaw/skills/commit/2af82ada7e6f36783262833b02cbff1a9a222acb"
+    },
     {
       "version": "0.1.3",
       "publishedAt": 1772855795975,
