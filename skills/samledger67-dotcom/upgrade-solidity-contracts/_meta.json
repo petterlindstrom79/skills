@@ -1,0 +1,11 @@
+{
+  "owner": "samledger67-dotcom",
+  "slug": "upgrade-solidity-contracts",
+  "displayName": "probe",
+  "latest": {
+    "version": "98.0.0",
+    "publishedAt": 1773724864563,
+    "commit": null
+  },
+  "history": []
+}
