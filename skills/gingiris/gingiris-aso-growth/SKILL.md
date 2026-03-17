@@ -1,15 +1,11 @@
 ---
 name: gingiris-aso-growth
 description: |
-  🇺🇸 ASO & App Cold Start Growth Playbook — Complete guide from App Store Optimization to UGC operations, multi-platform content strategy, and AI-powered scaling.
-  
-  🇨🇳 ASO 增长与 App 冷启动权威指南 — 从应用商店优化到 UGC 运营、多平台内容策略、AI 矩阵号的完整实操手册。
-  
-  🇯🇵 ASO＆アプリコールドスタート成長ガイド — App Store最適化からUGC運営、マルチプラットフォーム戦略、AIマトリックスまで。
-  
-  🇰🇷 ASO 및 앱 콜드 스타트 성장 플레이북 — 앱스토어 최적화부터 UGC 운영, 멀티플랫폼 전략, AI 매트릭스까지.
-  
-  Triggers: "ASO" | "App Store Optimization" | "app cold start" | "app launch" | "UGC creator" | "TikTok marketing" | "app growth" | "应用商店优化" | "App冷启动" | "UGC运营"
+  ASO (App Store Optimization) & Mobile App Growth Playbook — Complete ASO guide for App Store and Google Play ranking. Covers: ASO keyword research, app store ranking factors, app store listing optimization, mobile app cold start, UGC creator operations, TikTok/Instagram/YouTube Shorts marketing, AI-powered scaling. Real tactics for app growth and user acquisition.
+
+  🇨🇳 ASO 增长与 App 冷启动权威指南 | 🇯🇵 ASO成長ガイド | 🇰🇷 ASO 성장 플레이북
+
+  Keywords: ASO, App Store Optimization, app store ranking, Google Play optimization, mobile app growth, app marketing, app cold start, UGC, TikTok marketing, user acquisition, 应用商店优化, App冷启动
 ---
 
 # ASO 增长与 App 冷启动权威指南
