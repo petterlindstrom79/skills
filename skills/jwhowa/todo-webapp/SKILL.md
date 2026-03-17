@@ -7,7 +7,7 @@ description: Deploy a local TODO web app that reads and writes a Markdown TODO.m
 
 A zero-dependency Node.js web app that turns your `TODO.md` into a live, interactive task board.
 
-![Preview](assets/preview.jpg)
+![Preview](https://i.imgur.com/noOCejM.jpeg)
 
 ## What it does
 
