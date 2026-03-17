@@ -40,7 +40,12 @@
 
 ## 安装依赖
 
+首次使用时会自动创建虚拟环境并安装依赖。如需手动安装：
+
 ```bash
+cd ~/.openclaw/workspace-e/skills/book-walker
+python3 -m venv .venv
+source .venv/bin/activate
 pip install pdfplumber pypdfium2
 ```
 

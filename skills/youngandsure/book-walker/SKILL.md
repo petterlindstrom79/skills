@@ -8,23 +8,22 @@ metadata:
         "emoji": "📚",
         "requires":
           {
-            "bins": ["python3"],
-            "pip": ["pdfplumber", "pypdfium2"]
+            "bins": ["python3"]
           },
         "install":
           [
             {
-              "id": "pip",
-              "kind": "pip",
-              "package": "pdfplumber pypdfium2",
-              "label": "Install dependencies (pip)",
+              "id": "venv",
+              "kind": "shell",
+              "label": "Create venv and install dependencies",
+              "command": "cd ~/.openclaw/workspace-e/skills/book-walker && python3 -m venv .venv && .venv/bin/pip install pdfplumber pypdfium2"
             },
           ],
       },
   }
 ---
 
-# Book Walker Skill
+# Deep Reading Skill
 
 交互式PDF逐行阅读器，支持块级/行级翻页、跳转、搜索、书签等功能。
 
@@ -103,7 +102,7 @@ metadata:
 ### 核心模块
 
 ```
-deep-reading/
+pdf-reader/
 ├── __init__.py         # 主入口
 ├── reader/
 │   ├── types.py        # 类型定义
@@ -142,7 +141,7 @@ deep-reading/
 
 ### 存储结构
 
-每个 PDF 有独立目录（`~/.cache/deep-reading/{hash}/`），包含：
+每个 PDF 有独立目录（`~/.cache/pdf-reader/{hash}/`），包含：
 - `index.json` - 索引（total_pages, page_offsets）
 - `p1.json`, `p2.json` ... - 各页块数据
 - `state.json` - 阅读进度
