@@ -8,34 +8,21 @@ Base URL for this skill:
 
 ### Preferred: OpenClaw access key
 
-Use this header on protected business endpoints:
+Use this header on protected endpoints:
 
 ```http
 X-OpenClaw-Key: <access key>
 ```
 
-The key is configured in ScrapeTab Settings as `openclaw_access_key`.
-Do not use `OPENCLAW_SCRAPEFUN_API_KEY`. Only use `OPENCLAW_ACCESS_KEY`.
-Do not use `X-OpenClaw-Api-Key`; correct header is `X-OpenClaw-Key`.
+Rules:
+
+- Use `OPENCLAW_ACCESS_KEY` or the saved skill key
+- Do not use `OPENCLAW_SCRAPEFUN_API_KEY`
+- Do not use `X-OpenClaw-Api-Key`
 
 ### Fallback: Admin login
 
 - `POST /api/auth/login`
-
-Body:
-
-```json
-{
-  "username": "Admin",
-  "password": "..."
-}
-```
-
-Returns:
-
-- `token`
-- `expiresAt`
-- `user`
 
 Use the returned token on later protected requests:
 
@@ -43,92 +30,222 @@ Use the returned token on later protected requests:
 Authorization: Bearer <token>
 ```
 
-## Endpoints
+## Primary OpenClaw Endpoints
 
-### Libraries
+### Library catalog
 
-- `GET /api/libraries`
+- `GET /api/openclaw/libraries/catalog`
+- Permission: `library_query`
 
-Returns list entries with fields such as:
+Required query:
 
-- `id`
-- `name`
-- `type` (`movie` / `tv`)
-- `sourceMode` (`filesystem` / `virtual_scraper`)
-- `path`
+- `libraryId` or `libraryName`
 
-### Metadata stats
+Optional query:
 
-- `GET /api/metadata/stats`
+- `q`
+- `page`
+- `pageSize`
 
-Response shape:
+Use this for:
+
+- listing media entries in a library
+- resolving `metadataId` before later media calls
+
+Do not use `GET /api/metadata` or `GET /api/metadata/stats` for this.
+
+### Media state
+
+- `GET /api/openclaw/media/:metadataId/state`
+- Permission: `library_query`
+
+Use this for:
+
+- current files
+- existing episodes
+- missing episodes
+- `nextMissingEpisode`
+
+### Download target
+
+- `GET /api/openclaw/media/:metadataId/download-target`
+- Permission: `download_target_query`
+
+Use this for:
+
+- `seriesRootPath`
+- `seasonPath`
+- `downloadPath`
+- `storage`
+- `alreadyComplete`
+
+### Download check
+
+- `POST /api/openclaw/media/:metadataId/download-check`
+- Permission: `download_dedupe`
+
+Minimum payload:
+
+```json
+{}
+```
+
+Optional payload:
 
 ```json
 {
-  "total": 1234,
-  "directories": {
-    "Movie": 500,
-    "Anime": 734
+  "seasonNumber": 1,
+  "episodeNumber": 1,
+  "candidateName": "Episode 01",
+  "candidateSize": 1234567890,
+  "strictEpisodeMatch": true
+}
+```
+
+Use this before every download submission.
+
+Possible results:
+
+- `already_bound`
+- `already_landed`
+- `missing`
+- `ambiguous`
+
+### Download submit
+
+- `POST /api/openclaw/downloads/submit`
+- Permission: `download_submit`
+
+Minimum payload:
+
+```json
+{
+  "metadataId": "<metadataId>",
+  "magnet": "<magnet>"
+}
+```
+
+or:
+
+```json
+{
+  "metadataId": "<metadataId>",
+  "urls": ["<url>"]
+}
+```
+
+Optional payload:
+
+```json
+{
+  "preferredPath": "/Quark/媒体库/动漫/Series/Season 01",
+  "seasonNumber": 1,
+  "episodeNumber": 1,
+  "candidateMeta": {
+    "title": "Episode 01",
+    "size": 1234567890,
+    "source": "mikanani",
+    "publishedAt": "2026-03-16T00:00:00Z"
   }
 }
 ```
 
-Optional query:
+Possible results:
 
-- `paths` JSON string for explicit directory scope
+- `duplicateDecision = submitted`
+- `duplicateDecision = skipped_existing`
+- `duplicateDecision = skipped_bound`
 
-### Metadata total count
+### Confirm landed
 
-- `GET /api/metadata/count`
+- `POST /api/openclaw/downloads/:downloadId/confirm-landed`
+- Permission: `download_confirm`
 
-Response shape:
+Minimum payload:
 
 ```json
 {
-  "count": 1234
+  "metadataId": "<metadataId>"
 }
 ```
 
-### Search
+Optional payload:
 
-- `GET /api/scrape/search`
+```json
+{
+  "expectedPath": "/Quark/媒体库/动漫/Series/Season 01",
+  "seasonNumber": 1,
+  "episodeNumber": 1,
+  "waitMs": 15000,
+  "forceRefresh": true
+}
+```
 
-Common query params:
+Possible results:
 
-- `q`
-- `scraper` (optional)
-- `path` (optional)
+- `landed`
+- `not_found`
+- `partial`
+- `ambiguous`
 
-### Match folder
+### Finalize import
 
-- `POST /api/scrape/match-folder`
+- `POST /api/openclaw/media/:metadataId/finalize-import`
+- Permission: `import_finalize`
 
-Used to match a folder path to metadata and update library records.
+Minimum payload:
 
-### Match single target
+```json
+{
+  "downloadPath": "/Quark/媒体库/动漫/Series/Season 01"
+}
+```
 
-- `POST /api/scrape/match`
+Optional payload:
 
-Used to match a single file/url to metadata.
+```json
+{
+  "seasonNumber": 1,
+  "episodeNumber": 1,
+  "matchMode": "auto",
+  "forceScan": true,
+  "downloadId": "<downloadId>"
+}
+```
 
-### WebDAV scan/update
+Returns:
 
-- `POST /api/scrape/webdav/scan`
-- `POST /api/scrape/webdav/update`
+- `status`
+- `scan`
+- `match`
+- `postState`
+- `boundEpisodes`
+- `remainingMissingEpisodes`
 
-### OpenClaw library scan (exposed operation)
+### Download workflow status
+
+- `GET /api/openclaw/downloads/:downloadId`
+- Permission: `download_status` or one of `download_submit`, `download_confirm`, `import_finalize`
+
+Important:
+
+- `404` here means `Download workflow not found`
+- it does not mean the route is unavailable
+
+### Library scan
 
 - `POST /api/openclaw/libraries/scan`
+- Permission: `library_scan`
 
 Preferred payload:
 
 ```json
 {
-  "libraryName": "Movie"
+  "libraryName": "Anime"
 }
 ```
 
-Optional explicit payload:
+Explicit payload:
 
 ```json
 {
@@ -138,35 +255,79 @@ Optional explicit payload:
 }
 ```
 
-### WebDAV file operations
+Use this only for:
 
-- `POST /api/settings/webdav/move`
-- `POST /api/settings/webdav/move_thunder_batch`
-- `POST /api/settings/webdav/rename`
+- explicit rescan
+- forced refresh when the user asks for it
+- best-effort fallback when `finalize-import` is unavailable
 
-### Offline download
+If response contains `partial: true`, report the failed root paths explicitly.
 
+## Allowed Narrow Fallback Endpoints
+
+### Raw library config
+
+- `GET /api/libraries`
+
+Use only when the user explicitly asks for raw config fields such as:
+
+- `path`
+- `scraper`
+- `sourceMode`
+- `sourcePreferencesJson`
+
+### Raw scraper candidates
+
+- `GET /api/scrape/search`
+
+Use only when the user explicitly asks for raw scraper candidates.
+
+### Directory-level file listing
+
+- `GET /api/scrape/webdav/list`
+
+Use only when the user explicitly asks for directory-level enumeration detail that OpenClaw endpoints do not return.
+
+## Default Operation Order
+
+### List a library
+
+1. `GET /api/openclaw/libraries/catalog?libraryName=<name>`
+
+### Read a media entry
+
+1. Resolve `metadataId` from `catalog`
+2. `GET /api/openclaw/media/:metadataId/state`
+
+### Prepare a download
+
+1. `GET /api/openclaw/media/:metadataId/download-target`
+2. `POST /api/openclaw/media/:metadataId/download-check`
+
+### Submit a download
+
+1. `POST /api/openclaw/downloads/submit`
+
+### Continue after submission
+
+1. `POST /api/openclaw/downloads/:downloadId/confirm-landed`
+2. `POST /api/openclaw/media/:metadataId/finalize-import`
+3. `GET /api/openclaw/downloads/:downloadId`
+
+## Do Not Use In Normal OpenClaw Flows
+
+- `GET /api/metadata`
+- `GET /api/metadata/stats`
+- `GET /api/settings/webdav/search`
 - `POST /api/settings/webdav/add_offline_download`
 
-Used to submit URLs (including magnet links) through AList offline tools.
+## Prohibited Endpoints
 
-## Movie count recipe
-
-For "how many movies":
-
-1. Call `GET /api/libraries`.
-2. Keep libraries where `type === "movie"`.
-3. Call `GET /api/metadata/stats`.
-4. Read `directories[library.name]` and sum values.
-
-## Prohibited in this skill
-
-Do not use OpenClaw-special endpoints in this skill:
+Do not use:
 
 - `/api/openclaw/bootstrap/status`
 - `/api/openclaw/connect/context`
-- `/api/openclaw/tasks/*`
-- `/api/openclaw/workflows/*`
 - `/api/openclaw/jobs/*`
-
-Only exception: `POST /api/openclaw/libraries/scan`.
+- `/api/openclaw/sites/*`
+- `/api/openclaw/tasks/*`
+- `OPENCLAW_URL` remote delegation flow

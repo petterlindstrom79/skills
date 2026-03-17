@@ -3,9 +3,15 @@
   "slug": "scrapefun",
   "displayName": "ScrapeFun",
   "latest": {
-    "version": "0.0.1",
-    "publishedAt": 1773465228552,
-    "commit": "https://github.com/openclaw/skills/commit/d10c9de55b227f1d223e2f8bdac162f6312a53dc"
+    "version": "0.0.2",
+    "publishedAt": 1773645502016,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.1",
+      "publishedAt": 1773465228552,
+      "commit": "https://github.com/openclaw/skills/commit/d10c9de55b227f1d223e2f8bdac162f6312a53dc"
+    }
+  ]
 }
