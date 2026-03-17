@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/skill-weryai-media-editor",
-  "version": "1.1.1",
-  "description": "Advanced media editor: AI Upscaling, Background Removal, Image-to-Video (I2V), and Face Swapping. Agent-optimized, token-efficient SKILL.md. Zero-human-intervention API wrapper with deterministic outputs for autonomous agents.",
+  "version": "1.1.7",
+  "description": "Advanced media editor: AI Upscale, Background Removal, I2V, Face Swap. (Auto-reads API key)",
   "author": "OpenClaw Community",
   "license": "MIT",
   "keywords": [

@@ -1,11 +1,17 @@
 {
   "owner": "sunjian",
   "slug": "weryai-media-editor",
-  "displayName": "WeryAI Media Editor",
+  "displayName": "Weryai Media Editor",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1773638577273,
-    "commit": "https://github.com/openclaw/skills/commit/f139522b553a03e439008ce720578f9ca219aea3"
+    "version": "1.1.19",
+    "publishedAt": 1773747817061,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1773638577273,
+      "commit": "https://github.com/openclaw/skills/commit/f139522b553a03e439008ce720578f9ca219aea3"
+    }
+  ]
 }
