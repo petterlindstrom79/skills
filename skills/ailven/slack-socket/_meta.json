@@ -1,0 +1,11 @@
+{
+  "owner": "ailven",
+  "slug": "slack-socket",
+  "displayName": "Slack (Socket Mode)",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773669112768,
+    "commit": null
+  },
+  "history": []
+}
