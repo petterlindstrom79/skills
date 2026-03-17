@@ -6,6 +6,9 @@
 
 - `GET /api/wecom/health`：健康检查
 - `POST /api/wecom/stock/message`：股票消息（Header: `X-API-Key`, `X-User-Id`；Body: `message` / `query` / `content`）
+- `POST /api/wecom/stock/query`：自然语言搜股（Header: `X-API-Key`, `X-User-Id`；Body: `message` / `query` / `content`）
+- `GET /api/wecom/stock/limit-up`：涨停股专用查询（Header/Query: `X-API-Key`, `X-User-Id` / `userid`）
+- `GET /api/wecom/stock/monitor/stream`：实时监控流模板（Header/Query: `X-API-Key`, `X-User-Id` / `userid`）
 
 ---
 
