@@ -1,0 +1,11 @@
+{
+  "owner": "bensema",
+  "slug": "ths-financial-data",
+  "displayName": "股票",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773501353464,
+    "commit": null
+  },
+  "history": []
+}
