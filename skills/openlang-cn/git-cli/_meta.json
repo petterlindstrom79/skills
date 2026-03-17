@@ -1,0 +1,11 @@
+{
+  "owner": "openlang-cn",
+  "slug": "git-cli",
+  "displayName": "Git cli",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773629679251,
+    "commit": null
+  },
+  "history": []
+}
