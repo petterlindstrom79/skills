@@ -1,89 +1,321 @@
 ---
+description: Determine the smallest reliable skill stack for a goal
+  using capability mapping, overlap detection, and deterministic
+  scoring.
 name: skillfit-optimizer
-description: >-
-  Build and optimize a minimal working skill stack for a user goal: recommend
-  profiles, install the best-fit stack, run deterministic smoke checks, remove
-  overlap, score stack quality, persist before/after evidence, and produce a
-  fix-first rollout plan. Use when users ask what skills to install, how to
-  avoid duplicate/conflicting skills, how to reduce setup friction, or how to
-  improve skill ROI/time-to-value.
 ---
 
 # SkillFit Optimizer
 
-## Objective
+## Skill type
 
-Reduce time-to-value from skill discovery by turning goals into a tested, minimal, high-ROI skill stack with measurable before/after evidence.
+Agent configuration / Skill selection / Workflow optimization
 
-## Typical Trigger Phrases
+## Safety profile
 
-- "what skills should I install for X"
-- "optimize my current skill stack"
-- "remove duplicate/conflicting skills"
-- "which skill setup gives best ROI"
+Low risk. Runs in **analysis mode by default** and only modifies the
+environment when explicitly requested.
 
-## Workflow
+------------------------------------------------------------------------
 
-1. Analyze goal and context
-- Parse user objective, constraints, and required outputs.
-- Identify must-have capabilities and optional enhancements.
+# Purpose
 
-2. Propose 3 stack profiles
-- Minimal (lowest complexity)
-- Balanced (default)
-- Maximum (capability-rich)
+SkillFit Optimizer helps determine the **smallest reliable skill stack**
+needed to accomplish a user's goal.
 
-3. Install selected profile
-- Prefer fewer, higher-signal skills.
-- Avoid overlapping tools unless explicit fallback needed.
+Instead of installing many tools blindly, the optimizer:
 
-4. Smoke-check stack (deterministic)
-- Run `scripts/stack_check.py --bins <list> --history-path .skillfit/history.json --report-json .skillfit/latest-check.json`.
-- Validate one realistic happy-path task.
-- Enforce gate: if `availability_score < 80`, do not claim success; return explicit fix commands first.
+-   analyzes the goal
+-   maps required capabilities
+-   identifies candidate skills
+-   removes redundant tools
+-   checks environment readiness
+-   scores candidate stacks
+-   recommends the most reliable configuration
 
-5. Prune overlap
-- Remove redundant skills and conflicting patterns.
-- Keep one primary path per capability.
+This helps prevent:
 
-6. Score stack quality (0-100)
-- Coverage (0-30)
-- Reliability (0-30)
-- Setup friction (0-20, inverse)
-- Overlap discipline (0-20, inverse penalty)
+-   tool sprawl
+-   overlapping capabilities
+-   fragile workflows
+-   unnecessary dependencies
 
-7. Persist + recurrence loop
-- Persist each run in `.skillfit/history.json`.
-- Track recurring issues (same missing bins / same overlap class).
-- If a blocker recurs 3+ times in 30 days, elevate as high-priority remediation.
+------------------------------------------------------------------------
 
-8. Promotion rule
-- If a repeated pattern becomes generally useful, promote concise rule(s) to:
-  - `AGENTS.md` for workflow safeguards
-  - `TOOLS.md` for local tool gotchas
-  - `SOUL.md` for behavioral defaults (when applicable)
+# Quick Start
 
-## Required Output Structure
+Example request:
 
-1. Goal Fit Summary
-2. Recommended Profile (Minimal / Balanced / Maximum)
-3. Installed Stack
-4. Smoke Check Results (include deterministic checker output)
-5. Pruned/Removed Items
-6. Stack Score + Rationale
-7. Exact Fix Commands (copy/paste)
-8. Next 3 Improvements
-9. Before/After Delta (availability, missing bins, overlap)
+"What is the best skill stack for editing PDFs and analyzing documents?"
 
-## Quality Rules
+The optimizer will:
 
-- Prefer execution certainty over skill quantity.
-- Do not keep duplicate skills with same core function unless user requests redundancy.
-- Flag unresolved setup blockers explicitly.
-- If smoke check fails, return fix-plan before claiming success.
-- Always provide deterministic evidence (checker output + missing bins list + delta vs previous run).
+1.  analyze the goal
+2.  identify required capabilities
+3.  build candidate skill stacks
+4.  check environment readiness
+5.  recommend the best stack
 
-## Reference
+------------------------------------------------------------------------
 
-- Read `references/profile-templates.md` for profile patterns and scoring details.
-- Read `references/ops-report-template.md` for report format and gate language.
+# Triggers
+
+Invoke this skill when users ask:
+
+-   "What skills do I need for this task?"
+-   "Optimize my skill stack."
+-   "Recommend a minimal tool setup."
+-   "Which skills overlap?"
+-   "What tools should I install?"
+-   "Simplify my workflow tools."
+
+------------------------------------------------------------------------
+
+# Required Inputs
+
+-   user_goal
+-   environment_info (optional)
+-   preferred_profile (optional)
+
+------------------------------------------------------------------------
+
+# Capability Mapping
+
+User goals are translated into capability categories.
+
+Example:
+
+Goal: "Edit PDFs and summarize documents"
+
+Capabilities:
+
+-   pdf_editing
+-   document_analysis
+-   summarization
+
+------------------------------------------------------------------------
+
+# Capability Matrix
+
+Example capabilities and typical skill matches.
+
+  Capability               Example Skills
+  ------------------------ ----------------
+  pdf_editing              nano-pdf
+  document_analysis        data-analysis
+  document_editing         word-docx
+  spreadsheet_processing   excel-xlsx
+  automation               skill-creator
+  api_interaction          trello
+
+------------------------------------------------------------------------
+
+# Profiles
+
+## Minimal
+
+Smallest possible working stack.
+
+Focus:
+
+-   lowest setup complexity
+-   minimal dependencies
+-   fastest deployment
+
+------------------------------------------------------------------------
+
+## Balanced
+
+Balanced tradeoff between capability coverage and reliability.
+
+Recommended default profile.
+
+------------------------------------------------------------------------
+
+## Maximum
+
+Largest stack providing maximum redundancy and capability coverage.
+
+------------------------------------------------------------------------
+
+# Runtime Steps
+
+## 1. Analyze Goal
+
+Extract required capabilities from the request.
+
+------------------------------------------------------------------------
+
+## 2. Build Capability Map
+
+Translate the goal into structured capability categories.
+
+------------------------------------------------------------------------
+
+## 3. Discover Candidate Skills
+
+Identify available skills capable of providing each capability.
+
+Construct:
+
+-   candidate skill list
+-   capability coverage map
+
+------------------------------------------------------------------------
+
+## 4. Detect Overlap
+
+Identify redundant tools performing the same capability.
+
+Prefer fewer high-signal skills.
+
+------------------------------------------------------------------------
+
+## 5. Generate Candidate Stacks
+
+Produce stacks for each profile:
+
+-   Minimal
+-   Balanced
+-   Maximum
+
+Each stack includes:
+
+-   skills
+-   capabilities covered
+-   missing capabilities (if any)
+
+------------------------------------------------------------------------
+
+## 6. Run Environment Checks
+
+Verify environment readiness.
+
+Check for availability of common binaries:
+
+python node jq curl git
+
+Record results as:
+
+-   available
+-   missing
+-   unknown
+
+------------------------------------------------------------------------
+
+## 7. Compute Stack Score
+
+Stacks are scored across four dimensions.
+
+Coverage --- capability satisfaction\
+Reliability --- stability of tools\
+Setup Friction --- installation complexity\
+Overlap Discipline --- redundancy penalty
+
+Score formula:
+
+score = coverage \* 0.40 + reliability \* 0.30 + setup_friction \*
+0.20 + overlap_discipline \* 0.10
+
+Score range: 0--100
+
+------------------------------------------------------------------------
+
+## 8. Select Recommended Stack
+
+Choose the highest scoring stack.
+
+Tie‑break rules:
+
+1.  fewer skills
+2.  higher coverage
+3.  lower setup friction
+
+------------------------------------------------------------------------
+
+## 9. Produce Recommendations
+
+Return:
+
+-   recommended stack
+-   alternative stacks
+-   missing dependencies
+-   setup guidance
+
+------------------------------------------------------------------------
+
+# Output Contract
+
+Return structured output:
+
+{ "goal": "Edit PDFs and summarize documents", "recommended_profile":
+"balanced", "recommended_stack": \[ "nano-pdf", "data-analysis" \],
+"stack_score": 88, "capability_coverage": \[ "pdf_editing",
+"document_analysis", "summarization" \], "environment_check": {
+"python": "available", "jq": "available", "curl": "missing" },
+"alternatives": { "minimal": \["nano-pdf"\], "maximum": \["nano-pdf",
+"data-analysis", "skill-creator"\] } }
+
+------------------------------------------------------------------------
+
+# Best Practices
+
+Prefer smaller stacks when possible.
+
+Avoid overlapping tools that provide identical functionality.
+
+Check environment readiness before installing skills.
+
+Re-run the optimizer when workflows evolve.
+
+------------------------------------------------------------------------
+
+# Common Optimization Issues
+
+## Skill Bloat
+
+Too many tools installed for simple tasks.
+
+Solution: prune redundant skills.
+
+------------------------------------------------------------------------
+
+## Capability Gaps
+
+Required capability missing.
+
+Solution: add a targeted skill.
+
+------------------------------------------------------------------------
+
+## Environment Mismatch
+
+Required binaries unavailable.
+
+Solution: install dependencies.
+
+------------------------------------------------------------------------
+
+# Related Skills
+
+Agent Regression Check
+
+Use Agent Regression Check after stack changes to verify that
+configuration updates did not introduce regressions.
+
+------------------------------------------------------------------------
+
+# Limitations
+
+SkillFit Optimizer:
+
+-   does not execute workflows
+-   cannot guarantee correctness of external tools
+-   provides structured recommendations rather than guarantees
+
+------------------------------------------------------------------------
+
+# Implementation Note
+
+If a helper script such as scripts/stack_check.py exists, use it for
+environment checks. Otherwise perform lightweight PATH checks.
