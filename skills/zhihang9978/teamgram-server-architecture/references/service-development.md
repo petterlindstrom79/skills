@@ -52,13 +52,24 @@ func main() {
     flag.Parse()
     
     var c config.Config
-    conf.MustLoad(*configFile, &c)
+    // 加载配置，失败则退出
+    if err := conf.Load(*configFile, &c); err != nil {
+        log.Fatalf("failed to load config: %v", err)
+    }
     
-    ctx := svc.NewServiceContext(c)
+    // 创建服务上下文
+    ctx, err := svc.NewServiceContext(c)
+    if err != nil {
+        log.Fatalf("failed to create service context: %v", err)
+    }
     
-    s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
+    // 创建gRPC服务器
+    s, err := zrpc.NewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
         server.Register(grpcServer, ctx)
     })
+    if err != nil {
+        log.Fatalf("failed to create server: %v", err)
+    }
     
     defer s.Stop()
     

@@ -1,18 +1,31 @@
 ---
 name: teamgram-server-architecture
 description: Teamgram Server architecture guide for building Telegram-compatible backends. Use when designing service topology, implementing MTProto services, or self-hosting Teamgram. Covers service拆分, data flow, deployment patterns, and development workflows based on the official teamgram/teamgram-server repository.
-version: 1.0.0
+version: 1.0.1
 ---
 
 # Teamgram Server Architecture
 
 Complete architecture guide based on the official teamgram/teamgram-server repository.
 
+⚠️ **免责声明与安全提示**
+
+> 本技能基于对开源项目 `teamgram/teamgram-server` 的分析整理，仅供学习参考。
+> 
+> **重要提示**:
+> - 内容可能随官方仓库更新而过时，请以官方最新版本为准
+> - 生产环境使用前请自行验证所有配置和代码
+> - 部署配置中的密码、密钥等必须使用强密码并通过安全方式注入
+> - 建议直接参考官方文档: https://github.com/teamgram/teamgram-server
+> - 生产环境部署前请进行安全审计和渗透测试
+
+---
+
 ## Overview
 
 Teamgram Server is an unofficial open-source MTProto server implementation in Go, compatible with Telegram clients and supporting self-hosted deployment.
 
-**API Layer**: 223  
+**API Layer**: 223 (截至技能创建时，请以官方仓库最新版本为准)  
 **MTProto Versions**: Abridged, Intermediate, Padded intermediate, Full
 
 ## Core Features

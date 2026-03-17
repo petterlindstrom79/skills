@@ -14,20 +14,25 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      # ⚠️ 生产环境：使用强密码，通过 .env 文件或 secrets 注入
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme}
       MYSQL_DATABASE: teamgram
     volumes:
       - mysql_data:/var/lib/mysql
       - ./data/teamgram.sql:/docker-entrypoint-initdb.d/1.sql
+    # ⚠️ 安全警告：生产环境应该注释掉端口映射，或限制只允许应用服务器访问
+    # 使用 Docker network 或防火墙限制访问
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"  # 仅本地访问，或完全注释掉
 
   redis:
     image: redis:7-alpine
     volumes:
       - redis_data:/data
+    # ⚠️ 安全警告：生产环境应该限制访问，建议启用密码认证
+    # command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"  # 仅本地访问
 
   etcd:
     image: quay.io/coreos/etcd:v3.5.0
