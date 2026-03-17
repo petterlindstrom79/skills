@@ -3,9 +3,15 @@
   "slug": "multi-windows",
   "displayName": "多窗口模式",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773469573271,
-    "commit": "https://github.com/openclaw/skills/commit/de2104f6881546aea299c3495be0baa28c6c0011"
+    "version": "1.0.2",
+    "publishedAt": 1773546354964,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773469573271,
+      "commit": "https://github.com/openclaw/skills/commit/de2104f6881546aea299c3495be0baa28c6c0011"
+    }
+  ]
 }

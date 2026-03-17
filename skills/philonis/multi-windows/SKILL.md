@@ -1,3 +1,15 @@
+---
+name: Work Windows
+description: 多窗口工作台，管理多个独立工作窗口，切换时可自动保存和恢复工作进度
+read_when:
+  - 多窗口
+  - 窗口管理
+  - 切换窗口
+  - 列窗口
+metadata: {"openclaw":{"emoji":"🪟","category":"workflow"}}
+allowed-tools: Bash(work-windows:*)
+---
+
 # work-windows — 多窗口工作台 🪟
 
 > Manage multiple independent work windows with context isolation
@@ -15,6 +27,7 @@
 | 列窗口 | 列出所有窗口及状态 |
 | 查窗口 | 按时间段查询历史窗口 |
 | 完成窗口 | 标记窗口完成 |
+| 归档窗口 | 归档已完成窗口，列表中隐藏 |
 | 保存为窗口 | 把当前对话保存为新窗口 |
 
 ---
@@ -95,6 +108,31 @@ memory/tasks/
 回复：✅ 窗口 0314-1 已标记为已完成
 ```
 
+### 归档窗口 / Archive Window
+
+> 将已完成的窗口移入归档，归档后在列表中隐藏，可通过 --archived 查看
+
+```
+你说：归档 0314-1
+你说：archive 0314-1
+你说：把这个窗口归档
+
+回复：✅ 任务 0314-1 已归档
+```
+
+### 查看归档窗口 / List Archived
+
+```
+你说：列归档
+你说：list archived
+你说：查看归档窗口
+
+回复：📁 归档窗口列表：
+| ID | 名称 | 状态 | 创建时间 |
+|---|---|---|---|
+| 0314-1 | 推推产品规划 | 📁 已归档 | 03-14 13:42 |
+```
+
 ### 当前状态 / Current Status
 
 ```
@@ -166,11 +204,12 @@ memory/tasks/
 └── scripts/
     ├── create.py         # 开窗口
     ├── list.py           # 列窗口
-    ├── query.py         # 查窗口
-    ├── switch.py        # 切窗口
-    ├── status.py        # 当前状态
-    ├── complete.py      # 完成窗口
-    ├── save_summary.py  # 保存摘要
+    ├── query.py          # 查窗口
+    ├── switch.py         # 切窗口
+    ├── status.py         # 当前状态
+    ├── complete.py       # 完成窗口
+    ├── archive.py        # 归档窗口
+    ├── save_summary.py   # 保存摘要
     └── save_as_window.py # 保存为窗口
 ```
 
