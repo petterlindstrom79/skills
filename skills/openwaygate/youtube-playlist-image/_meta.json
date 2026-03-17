@@ -3,9 +3,15 @@
   "slug": "youtube-playlist-image",
   "displayName": "YouTube Playlist Image",
   "latest": {
-    "version": "0.10.6-3",
-    "publishedAt": 1773335192518,
-    "commit": "https://github.com/openclaw/skills/commit/6aed143d267c104089785303ca24a60a89cc2b04"
+    "version": "0.10.7-dev",
+    "publishedAt": 1773497272273,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.10.6-3",
+      "publishedAt": 1773335192518,
+      "commit": "https://github.com/openclaw/skills/commit/6aed143d267c104089785303ca24a60a89cc2b04"
+    }
+  ]
 }
