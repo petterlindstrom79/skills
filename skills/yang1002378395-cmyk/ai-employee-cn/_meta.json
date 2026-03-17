@@ -3,9 +3,15 @@
   "slug": "ai-employee-cn",
   "displayName": "Ai Employee Cn",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1773599921989,
-    "commit": "https://github.com/openclaw/skills/commit/c210ea0fd35513990d0bb05968e454a379f34cc7"
+    "version": "1.2.3",
+    "publishedAt": 1773727068550,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1773599921989,
+      "commit": "https://github.com/openclaw/skills/commit/c210ea0fd35513990d0bb05968e454a379f34cc7"
+    }
+  ]
 }

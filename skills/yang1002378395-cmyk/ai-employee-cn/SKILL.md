@@ -1,6 +1,6 @@
 ---
 name: ai-employee-cn
-version: 1.0.1
+version: 1.2.3
 description: AI 员工配置服务 - 帮企业/个人配置 OpenClaw AI 员工，自动化客服、内容生成、数据分析等任务。
 metadata:
   openclaw:
