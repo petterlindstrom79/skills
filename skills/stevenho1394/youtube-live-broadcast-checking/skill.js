@@ -1,66 +1,27 @@
 const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
+const { getYoutubeApiKey } = require('./config');
+const store = require('./store');
 
-const MEMORY_DIR = path.join(process.env.HOME || process.env.USERPROFILE, '.openclaw', 'workspace-for-jose', 'memory');
-const WATCHLIST_FILE = path.join(MEMORY_DIR, 'youtube-channels.json');
-
-// Ensure memory directory exists
-if (!fs.existsSync(MEMORY_DIR)) {
-  fs.mkdirSync(MEMORY_DIR, { recursive: true });
-}
-
-// Load or initialize watchlist
-function loadWatchlist() {
-  try {
-    if (fs.existsSync(WATCHLIST_FILE)) {
-      const data = fs.readFileSync(WATCHLIST_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error('Failed to load watchlist:', err.message);
-  }
-  return { channels: [] };
-}
-
-// Save watchlist atomically
-function saveWatchlist(watchlist) {
-  try {
-    const tempFile = WATCHLIST_FILE + '.tmp';
-    fs.writeFileSync(tempFile, JSON.stringify(watchlist, null, 2));
-    fs.renameSync(tempFile, WATCHLIST_FILE);
-    return true;
-  } catch (err) {
-    console.error('Failed to save watchlist:', err.message);
-    return false;
-  }
-}
-
-// YouTube API client with timeout
+// YouTube API client (lazy init)
 let youtubeClient = null;
 
 function getYouTubeClient() {
   if (youtubeClient) return youtubeClient;
-
-  const apiKey = process.env.YOUTUBE_API_KEY;
+  const apiKey = getYoutubeApiKey();
   if (!apiKey) {
     throw new Error('Missing YOUTUBE_API_KEY environment variable');
   }
-
   youtubeClient = google.youtube({
     version: 'v3',
     auth: apiKey
   });
-
   return youtubeClient;
 }
 
-// Validate YouTube channel ID format (basic check)
 function isValidChannelId(channelId) {
   return typeof channelId === 'string' && (channelId.startsWith('UC') || channelId.startsWith('PL'));
 }
 
-// Resolve human-friendly channel identifiers (handles, URLs) to actual channel ID
 async function resolveChannelId(identifier, youtube) {
   if (!identifier || typeof identifier !== 'string') {
     return { error: 'Invalid channel identifier' };
@@ -68,95 +29,110 @@ async function resolveChannelId(identifier, youtube) {
 
   const trimmed = identifier.trim();
 
-  // Already a valid channel ID
   if (isValidChannelId(trimmed)) {
     return { channelId: trimmed };
   }
 
-  // Extract from URL: youtube.com/channel/UCxxxx, youtube.com/@handle, youtube.com/user/username
   try {
     const urlMatch = trimmed.match(/(?:youtube\.com\/(?:channel\/|@|user\/)?([^\/\?]+))/);
     if (urlMatch) {
-      const extracted = urlMatch[1];
-      // If it looks like a channel ID, return it
-      if (isValidChannelId(extracted)) {
-        return { channelId: extracted };
+      const possibleId = urlMatch[1];
+      if (isValidChannelId(possibleId)) {
+        return { channelId: possibleId };
       }
-      // Otherwise it's a handle/username; fall through to search
-      trimmed = extracted;
     }
-  } catch (e) {
-    // Not a URL, continue
+  } catch {
+    // continue to search
   }
 
-  // If starts with @, strip it
-  let handle = trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
-
-  // Search for channel by handle/name
   try {
-    const searchResponse = await youtube.search.list({
+    const searchResp = await youtube.search.list({
       part: ['snippet'],
-      q: handle,
+      q: trimmed,
       type: ['channel'],
-      maxResults: 5
+      maxResults: 1
     });
 
-    if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
-      return { error: `No channel found for "${handle}"` };
+    const items = searchResp.data.items || [];
+    if (items.length > 0) {
+      return { channelId: items[0].id.channelId };
     }
-
-    // Find an exact handle match if possible (case-insensitive)
-    const exactMatch = searchResponse.data.items.find(item =>
-      item.snippet.channelTitle?.toLowerCase() === handle.toLowerCase()
-    );
-    const channelItem = exactMatch || searchResponse.data.items[0];
-
-    return { channelId: channelItem.snippet.channelId };
   } catch (err) {
-    console.error('Error resolving channel ID:', err.message);
-    if (err.response?.status === 403) {
-      return { error: 'Quota exceeded while resolving channel' };
+    console.error('Channel resolve error:', err.message);
+    return { error: `Could not resolve channel: ${err.message}` };
+  }
+
+  return { error: 'Could not resolve channel identifier' };
+}
+
+async function getUpcomingForChannel(channelId, youtube) {
+  try {
+    const searchResp = await youtube.search.list({
+      part: ['snippet'],
+      channelId: channelId,
+      eventType: 'upcoming',
+      type: 'video',
+      maxResults: 10
+    });
+
+    const upcomingVideos = searchResp.data.items || [];
+    if (upcomingVideos.length === 0) {
+      return null;
     }
-    return { error: `Failed to resolve channel: ${err.message}` };
+
+    const videoIds = upcomingVideos.map(v => v.id.videoId).join(',');
+    const detailsResp = await youtube.videos.list({
+      part: ['liveStreamingDetails'],
+      id: videoIds
+    });
+
+    const detailsMap = {};
+    (detailsResp.data.items || []).forEach(vid => {
+      detailsMap[vid.id] = vid.liveStreamingDetails || {};
+    });
+
+    const results = upcomingVideos.map(v => {
+      const details = detailsMap[v.id.videoId] || {};
+      return {
+        video_id: v.id.videoId,
+        title: v.snippet.title,
+        scheduled_start_time: details.scheduledStartTime || null,
+        thumbnail_url: v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.default?.url || '',
+        video_url: `https://www.youtube.com/watch?v=${v.id.videoId}`
+      };
+    }).filter(r => r.scheduled_start_time);
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    results.sort((a, b) => new Date(a.scheduled_start_time) - new Date(b.scheduled_start_time));
+    return results[0];
+  } catch (err) {
+    console.error(`Error fetching upcoming for channel ${channelId}:`, err.message);
+    throw err;
   }
 }
 
-// Wrapper to ensure we have a valid channel ID before proceeding
-async function withResolvedChannel(params, callback) {
-  const { channel_id: rawId, channel_ids: rawIds } = params;
+async function withResolvedChannel(params, handler) {
+  const { channel_id } = params;
+  if (!channel_id) {
+    return { error: 'channel_id is required' };
+  }
+
   const youtube = getYouTubeClient();
-
-  // Resolve single channel_id
-  if (rawId) {
-    const resolved = await resolveChannelId(rawId, youtube);
-    if (resolved.error) return { error: resolved.error };
-    return callback({ ...params, channel_id: resolved.channelId });
+  const resolved = await resolveChannelId(channel_id, youtube);
+  if (resolved.error) {
+    return resolved;
   }
 
-  // Resolve array of channel_ids
-  if (rawIds && Array.isArray(rawIds)) {
-    const resolvedIds = [];
-    for (const raw of rawIds) {
-      const resolved = await resolveChannelId(raw, youtube);
-      if (resolved.error) {
-        return { error: `Channel "${raw}": ${resolved.error}` };
-      }
-      resolvedIds.push(resolved.channelId);
-    }
-    return callback({ ...params, channel_ids: resolvedIds });
-  }
-
-  return callback(params); // No channel identifier provided (watchlist case)
+  return handler({ channel_id: resolved.channelId, youtube });
 }
 
 // Tool: add_channel
 async function addChannel(params) {
   return withResolvedChannel(params, async ({ channel_id }) => {
-    const watchlist = loadWatchlist();
-
-    // Check if channel already exists
-    const existing = watchlist.channels.find(c => c.id === channel_id);
-    if (existing) {
+    if (store.findChannel(channel_id)) {
       return { success: false, message: `Channel ${channel_id} is already in the watchlist` };
     }
 
@@ -175,23 +151,16 @@ async function addChannel(params) {
       const channelInfo = response.data.items[0];
       const channelName = channelInfo.snippet.title;
 
-      watchlist.channels.push({
+      store.addChannel({
         id: channel_id,
         name: channelName,
         added_at: new Date().toISOString()
       });
 
-      const saved = saveWatchlist(watchlist);
-
-      if (saved) {
-        return { id: channel_id, name: channelName, status: 'added' };
-      } else {
-        return { error: 'Failed to save watchlist' };
-      }
+      return { id: channel_id, name: channelName, status: 'added' };
     } catch (err) {
       console.error('YouTube API error:', err.message);
-
-      if (err.message.includes('API key')) {
+      if (err.message.includes('API key') || err.response?.status === 400) {
         return { error: 'YouTube API key is invalid or missing' };
       } else if (err.response?.status === 403) {
         return { error: 'Quota exceeded' };
@@ -207,93 +176,16 @@ async function addChannel(params) {
 // Tool: remove_channel
 async function removeChannel(params) {
   return withResolvedChannel(params, async ({ channel_id }) => {
-    const watchlist = loadWatchlist();
-    const index = watchlist.channels.findIndex(c => c.id === channel_id);
-
-    if (index === -1) {
+    if (!store.removeChannelById(channel_id)) {
       return { error: `Channel ${channel_id} not found in watchlist` };
     }
-
-    watchlist.channels.splice(index, 1);
-    const saved = saveWatchlist(watchlist);
-
-    if (saved) {
-      return { removed: true };
-    } else {
-      return { error: 'Failed to save watchlist' };
-    }
+    return { removed: true };
   });
 }
 
 // Tool: list_channels
 async function listChannels() {
-  const watchlist = loadWatchlist();
-  return watchlist.channels;
-}
-
-// Helper: get upcoming broadcasts for a single channel
-async function getUpcomingForChannel(channelId, youtube) {
-  try {
-    // Search for upcoming videos
-    const searchResponse = await youtube.search.list({
-      part: ['id'],
-      channelId: channelId,
-      type: 'video',
-      eventType: 'upcoming',
-      order: 'date',
-      maxResults: 5
-    });
-
-    if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
-      return null;
-    }
-
-    const videoIds = searchResponse.data.items.map(item => item.id.videoId);
-
-    // Get video details including liveStreamingDetails
-    const videosResponse = await youtube.videos.list({
-      part: ['snippet', 'liveStreamingDetails'],
-      id: videoIds.join(',')
-    });
-
-    if (!videosResponse.data.items || videosResponse.data.items.length === 0) {
-      return null;
-    }
-
-    // Filter for videos with scheduledStartTime in the future
-    const now = new Date();
-    const upcomingVideos = [];
-
-    for (const video of videosResponse.data.items) {
-      const streamingDetails = video.liveStreamingDetails;
-      if (!streamingDetails || !streamingDetails.scheduledStartTime) {
-        continue;
-      }
-
-      const scheduledTime = new Date(streamingDetails.scheduledStartTime);
-      if (scheduledTime > now) {
-        upcomingVideos.push({
-          video_id: video.id,
-          title: video.snippet.title,
-          scheduled_start_time: streamingDetails.scheduledStartTime,
-          thumbnail_url: video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.default?.url || '',
-          video_url: `https://www.youtube.com/watch?v=${video.id}`
-        });
-      }
-    }
-
-    if (upcomingVideos.length === 0) {
-      return null;
-    }
-
-    // Sort by scheduled_start_time ascending
-    upcomingVideos.sort((a, b) => new Date(a.scheduled_start_time) - new Date(b.scheduled_start_time));
-
-    return upcomingVideos[0]; // Return the earliest
-  } catch (err) {
-    console.error(`Error fetching upcoming for channel ${channelId}:`, err.message);
-    throw err;
-  }
+  return store.getWatchlist();
 }
 
 // Tool: get_next_broadcast
@@ -302,19 +194,26 @@ async function getNextBroadcast(params) {
     try {
       const youtube = getYouTubeClient();
       const result = await getUpcomingForChannel(channel_id, youtube);
-
       if (!result) {
         return null;
       }
 
-      // Get channel name
-      const channelResponse = await youtube.channels.list({
-        part: ['snippet'],
-        id: channel_id,
-        maxResults: 1
-      });
-
-      const channelName = channelResponse.data.items?.[0]?.snippet?.title || 'Unknown Channel';
+      let channelName = 'Unknown Channel';
+      const fromWatchlist = store.findChannel(channel_id);
+      if (fromWatchlist) {
+        channelName = fromWatchlist.name;
+      } else {
+        try {
+          const channelResp = await youtube.channels.list({
+            part: ['snippet'],
+            id: channel_id,
+            maxResults: 1
+          });
+          if (channelResp.data.items?.[0]?.snippet?.title) {
+            channelName = channelResp.data.items[0].snippet.title;
+          }
+        } catch (_) {}
+      }
 
       return {
         channel_id: channel_id,
@@ -327,7 +226,6 @@ async function getNextBroadcast(params) {
       };
     } catch (err) {
       console.error('YouTube API error:', err.message);
-
       if (err.response?.status === 403) {
         return { error: 'Quota exceeded' };
       } else {
@@ -339,70 +237,117 @@ async function getNextBroadcast(params) {
 
 // Tool: check_upcoming_broadcasts
 async function checkUpcomingBroadcasts(params) {
-  return withResolvedChannel(params, async ({ channel_ids }) => {
-    let channelIds = channel_ids;
+  const { channel_ids } = params;
+  let channelIds = channel_ids;
 
-    // If no channel_ids provided, use all from watchlist
-    if (!channelIds || channelIds.length === 0) {
-      const watchlist = loadWatchlist();
-      channelIds = watchlist.channels.map(c => c.id);
+  if (!channelIds || channelIds.length === 0) {
+    channelIds = store.getWatchlist();
+  }
+
+  if (!Array.isArray(channelIds) || channelIds.length === 0) {
+    return [];
+  }
+
+  try {
+    const youtube = getYouTubeClient();
+    const results = [];
+
+    const channelPromises = channelIds.map(async (channelId) => {
+      try {
+        let channelName = 'Unknown Channel';
+        const fromWatchlist = store.findChannel(channelId);
+        if (fromWatchlist) {
+          channelName = fromWatchlist.name;
+        } else {
+          try {
+            const channelResp = await youtube.channels.list({
+              part: ['snippet'],
+              id: channelId,
+              maxResults: 1
+            });
+            if (channelResp.data.items?.[0]?.snippet?.title) {
+              channelName = channelResp.data.items[0].snippet.title;
+            }
+          } catch (_) {}
+        }
+
+        const upcoming = await getUpcomingForChannel(channelId, youtube);
+        if (upcoming) {
+          results.push({
+            channel_id: channelId,
+            channel_name: channelName,
+            video_id: upcoming.video_id,
+            title: upcoming.title,
+            scheduled_start_time: upcoming.scheduled_start_time,
+            thumbnail_url: upcoming.thumbnail_url,
+            video_url: upcoming.video_url
+          });
+        }
+      } catch (err) {
+        console.error(`Error processing channel ${channelId}:`, err.message);
+        if (err.response?.status === 403) {
+          throw err;
+        }
+      }
+    });
+
+    await Promise.all(channelPromises);
+
+    results.sort((a, b) => new Date(a.scheduled_start_time) - new Date(b.scheduled_start_time));
+    return results;
+  } catch (err) {
+    console.error('YouTube API error:', err.message);
+    if (err.response?.status === 403) {
+      return { error: 'Quota exceeded' };
+    } else {
+      return { error: `YouTube API error: ${err.message}` };
     }
+  }
+}
 
-    if (!Array.isArray(channelIds) || channelIds.length === 0) {
-      return [];
-    }
-
+// Tool: get_live_broadcast
+async function getLiveBroadcast(params) {
+  return withResolvedChannel(params, async ({ channel_id }) => {
     try {
       const youtube = getYouTubeClient();
-      const results = [];
 
-      // Get channel names and upcoming broadcasts in parallel
-      const channelPromises = channelIds.map(async (channelId) => {
-        try {
-          // Get channel name
-          const channelResponse = await youtube.channels.list({
-            part: ['snippet'],
-            id: channelId,
-            maxResults: 1
-          });
-
-          const channelName = channelResponse.data.items?.[0]?.snippet?.title || 'Unknown Channel';
-
-          // Get upcoming broadcast
-          const upcoming = await getUpcomingForChannel(channelId, youtube);
-
-          if (upcoming) {
-            results.push({
-              channel_id: channelId,
-              channel_name: channelName,
-              video_id: upcoming.video_id,
-              title: upcoming.title,
-              scheduled_start_time: upcoming.scheduled_start_time,
-              thumbnail_url: upcoming.thumbnail_url,
-              video_url: upcoming.video_url
-            });
-          }
-        } catch (err) {
-          console.error(`Error processing channel ${channelId}:`, err.message);
-          // Re-throw critical errors (quota, auth) to abort entire operation
-          if (err.response?.status === 403) {
-            throw err;
-          }
-          // For other errors (channel not found, etc.), continue processing other channels
-        }
+      const searchResp = await youtube.search.list({
+        part: ['snippet'],
+        channelId: channel_id,
+        eventType: 'live',
+        type: 'video',
+        maxResults: 1
       });
 
-      await Promise.all(channelPromises);
+      if (!searchResp.data.items || searchResp.data.items.length === 0) {
+        return null;
+      }
 
-      // Sort by scheduled_start_time ascending
-      results.sort((a, b) => new Date(a.scheduled_start_time) - new Date(b.scheduled_start_time));
+      const video = searchResp.data.items[0];
+      const videoId = video.id.videoId;
 
-      return results;
+      const videoResp = await youtube.videos.list({
+        part: ['snippet', 'liveStreamingDetails'],
+        id: videoId
+      });
+
+      const videoInfo = videoResp.data.items?.[0] || video;
+      const snippet = videoInfo.snippet || video.snippet;
+
+      return {
+        channel_id: channel_id,
+        video_id: videoId,
+        title: snippet.title,
+        description: snippet.description,
+        thumbnail_url: snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url,
+        video_url: `https://www.youtube.com/watch?v=${videoId}`,
+        actual_start_time: videoInfo.liveStreamingDetails?.actualStartTime || null,
+        concurrent_viewers: videoInfo.liveStreamingDetails?.concurrentViewers || null
+      };
     } catch (err) {
-      console.error('YouTube API error:', err.message);
-
+      console.error('YouTube API error (get_live_broadcast):', err.message);
       if (err.response?.status === 403) {
-        return { error: 'Quota exceeded' };
+        return { error: 'Quota exceeded or live streaming not enabled for this channel' };
       } else {
         return { error: `YouTube API error: ${err.message}` };
       }
@@ -410,7 +355,12 @@ async function checkUpcomingBroadcasts(params) {
   });
 }
 
-// Export tools for OpenClaw
+// Deprecated
+async function checkLiveStatus() {
+  return { error: 'check_live_status is deprecated. Use check_upcoming_broadcasts instead.' };
+}
+
+// Export
 module.exports = {
   tools: {
     add_channel: addChannel,
@@ -418,9 +368,7 @@ module.exports = {
     list_channels: listChannels,
     get_next_broadcast: getNextBroadcast,
     check_upcoming_broadcasts: checkUpcomingBroadcasts,
-    // Preserve original tool for backward compatibility
-    check_live_status: async () => {
-      return { error: 'check_live_status is deprecated. Use check_upcoming_broadcasts instead.' };
-    }
+    get_live_broadcast: getLiveBroadcast,
+    check_live_status: checkLiveStatus
   }
 };
