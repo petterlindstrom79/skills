@@ -1,0 +1,11 @@
+{
+  "owner": "jolestar",
+  "slug": "sui-jsonrpc-skill",
+  "displayName": "Sui JSON-RPC Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773617056369,
+    "commit": null
+  },
+  "history": []
+}
