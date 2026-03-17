@@ -32,6 +32,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_DIR.parent
 RECENT_REPORT_LIST_CACHE_FILE = SKILL_ROOT / "report_list_cache.json"
 MAINLAND_USER_NOTICE = "当前仅支持中国大陆手机号用户使用本服务。"
+APP_DOWNLOAD_URL = "https://apps.apple.com/cn/app/%E5%A5%BD%E7%9D%A1%E7%9C%A0365/id1584620848"
 
 
 class ApiManager:
@@ -47,6 +48,8 @@ class ApiManager:
     @staticmethod
     def get_api_headers() -> dict[str, str]:
         headers = {"content-type": "application/json"}
+        if ConfigManager().is_dev():
+            headers["x-version"] = "v1.0.0-beta"
         return headers
 
     @staticmethod
@@ -61,9 +64,11 @@ class ApiManager:
         headers = self.get_api_headers()
         payload = {"body": {"mobile": phone, "source": 16}}
 
+        headers.pop("x-version", None)
+
         try:
             response = requests.post(
-                f"{self.base_url}/mini/api/appleplus/sendCode",
+                f"{self.base_url}/mini/api/appleplus/sendCodeOpenclaw",
                 headers=headers,
                 json=payload,
                 timeout=10,
@@ -425,7 +430,7 @@ class ApiManager:
         result_json = self._call_common("XHJD900103002", {"mobile": phone})
         resp_head = result_json.get("respHead") or {}
         if self.is_ok(str(resp_head.get("respCode", ""))):
-            return f"✅ 心电检测通知已通过心脏+APP下发！\n\n请点击手机通知栏消息拉起心脏+APP，进入测量页面。\n心电测量操作指引：https://support.apple.com/zh-cn/120277\n测量完成后，您可以随时对我说“查报告”来查看结果。\n{MAINLAND_USER_NOTICE}"
+            return f"✅ 心电检测通知已通过心脏+APP下发！\n\n请点击手机通知栏消息拉起心脏+APP，进入测量页面。\n心电测量操作指引：https://support.apple.com/zh-cn/120277\n测量完成后，您可以随时对我说“帮我查询最新的心电报告”来查看结果。\n{MAINLAND_USER_NOTICE}"
         raise SkillError("通知下发失败，请稍后重试", {"respHead": resp_head})
 
     def send_authorize_notify(self) -> dict:
@@ -475,7 +480,7 @@ class ApiManager:
                     "status": "1",
                     "next_action": "wait_user_confirm_then_poll_authorization",
                     "push_result": push_result,
-                    "user_message": f"已向您手机上的心脏+APP发送授权通知，请先在APP内确认授权。确认后请回复“已授权”，我再为您检查授权状态。（如未收到消息，请您确保已下载心脏+APP并完成登录）{MAINLAND_USER_NOTICE}",
+                    "user_message": f"已向您手机上的心脏+APP发送授权通知，请先在APP内确认授权。确认后请回复“已授权”，我再为您检查授权状态。（如未收到消息，请您确保已下载心脏+APP并完成登录：{APP_DOWNLOAD_URL} ）{MAINLAND_USER_NOTICE}",
                 }
 
             raise SkillError(

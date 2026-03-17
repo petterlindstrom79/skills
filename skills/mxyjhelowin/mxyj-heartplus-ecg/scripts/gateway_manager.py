@@ -23,6 +23,7 @@ from errors import JsonArgumentParser, SkillError
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_DIR.parent
 BIN_DIR = SKILL_ROOT / "bin"
+APP_DOWNLOAD_URL = "https://apps.apple.com/cn/app/%E5%A5%BD%E7%9D%A1%E7%9C%A0365/id1584620848"
 
 
 @dataclass
@@ -62,7 +63,8 @@ class GatewayManager:
                 return "linux-arm64"
             return "linux-amd64"
 
-        raise SkillError("当前设备暂不支持自动准备安全程序，请改在受支持系统执行", {"system": system, "machine": machine})
+        raise SkillError("当前设备暂不支持自动准备安全程序，请改在受支持系统执行",
+                         {"system": system, "machine": machine})
 
     @staticmethod
     def _build_subprocess_env() -> dict[str, str]:
@@ -156,7 +158,8 @@ class GatewayManager:
                 specs[arch] = spec
 
         if not specs:
-            raise SkillError("安全程序下载配置无可用项，请检查配置后重试", {"path": str(self.config_manager.config_file)})
+            raise SkillError("安全程序下载配置无可用项，请检查配置后重试",
+                             {"path": str(self.config_manager.config_file)})
 
         return specs
 
@@ -260,7 +263,7 @@ class GatewayManager:
                     if "verify cloud error" in error_msg:
                         raise SkillError(
                             "授权校验失败，请确认用户已在心脏+APP完成授权后重试。",
-                            {"suggestion": "先确认用户是否完成APP授权；如未完成可重新发送授权通知，完成后再重试校验。"}
+                            {"suggestion": f"先确认用户是否完成APP授权；如未完成可重新发送授权通知，完成后再重试校验。如需先下载并登录心脏+APP，请使用：{APP_DOWNLOAD_URL}"}
                         )
             raise SkillError("安全校验执行未完成，请稍后重试", {"next_action": "ask_send_authorize_notify"})
 
@@ -273,28 +276,45 @@ class GatewayManager:
     def check_factory(self):
         phone = self._ensure_phone()
         check_json = json.dumps({"action": "check_factory"}, ensure_ascii=False, separators=(",", ":"))
-        payload = self.run("encry", [f"--phone={phone}", f"--json={check_json}"])
+
+        if self.config_manager.is_dev():
+            payload = self.run("encry", [f"--phone={phone}", f"--json={check_json}", "--test"])
+        else:
+            payload = self.run("encry", [f"--phone={phone}", f"--json={check_json}"])
+
         return self._normalize_payload(payload, data_default={})
 
     # 获取加密因子
     def verify(self, code: str):
         phone = self._ensure_phone()
 
-        payload = self.run("verify", [f"--phone={phone}", f"--code={code}"])
+        if self.config_manager.is_dev():
+            payload = self.run("verify", [f"--phone={phone}", f"--code={code}", "--test"])
+        else:
+            payload = self.run("verify", [f"--phone={phone}", f"--code={code}"])
+
         return self._normalize_payload(payload)
 
     # 加密
     def encry(self, biz_json: str):
         phone = self._ensure_phone()
 
-        payload = self.run("encry", [f"--phone={phone}", f"--json={biz_json}"])
+        if self.config_manager.is_dev():
+            payload = self.run("encry", [f"--phone={phone}", f"--json={biz_json}", "--test"])
+        else:
+            payload = self.run("encry", [f"--phone={phone}", f"--json={biz_json}"])
+
         return self._normalize_payload(payload)
 
     # 解密
     def decry(self, biz_body: str):
         phone = self._ensure_phone()
 
-        payload = self.run("decry", [f"--phone={phone}", f"--body={biz_body}"])
+        if self.config_manager.is_dev():
+            payload = self.run("decry", [f"--phone={phone}", f"--body={biz_body}", "--test"])
+        else:
+            payload = self.run("decry", [f"--phone={phone}", f"--body={biz_body}"])
+
         return self._normalize_payload(payload)
 
 
@@ -303,7 +323,8 @@ if __name__ == "__main__":
         parser = JsonArgumentParser()
         parser.add_argument("--action", choices=["platform", "ensure", "check_factory", "verify"], required=True)
         parser.add_argument("--code")
-        parser.add_argument("--session-key", required=True, help="Session key from current conversation context, e.g. agent:main:main")
+        parser.add_argument("--session-key", required=True,
+                            help="Session key from current conversation context, e.g. agent:main:main")
         args = parser.parse_args()
 
         gm = GatewayManager(session_key=args.session_key)
@@ -320,7 +341,8 @@ if __name__ == "__main__":
             elif result["code"] in ["1002", "1003"]:
                 print(False)
             else:
-                raise SkillError("登录校验状态检查失败，请先发起APP授权并重新校验", {"code": result["code"], "message": result["message"]})
+                raise SkillError("登录校验状态检查失败，请先发起APP授权并重新校验",
+                                 {"code": result["code"], "message": result["message"]})
         elif args.action == "verify":
             if not args.code:
                 raise SkillError("请先提供授权码，再执行 verify")
@@ -331,7 +353,8 @@ if __name__ == "__main__":
             elif result["code"] in ["1002", "1003"]:
                 print(False)
             else:
-                raise SkillError("授权校验未完成，请确认APP授权状态后重试", {"code": result["code"], "message": result["message"]})
+                raise SkillError("授权校验未完成，请确认APP授权状态后重试",
+                                 {"code": result["code"], "message": result["message"]})
         else:
             raise SkillError("当前操作不受支持，请使用 platform/ensure/check_factory/verify")
     except SkillError as e:

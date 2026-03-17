@@ -3,9 +3,15 @@
   "slug": "mxyj-heartplus-ecg",
   "displayName": "mxyj-heartplus-ecg",
   "latest": {
-    "version": "0.0.1",
-    "publishedAt": 1773402495652,
-    "commit": "https://github.com/openclaw/skills/commit/40854235b16cb73296784a90db9f59a03ad6aa64"
+    "version": "0.0.2",
+    "publishedAt": 1773665428306,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.1",
+      "publishedAt": 1773402495652,
+      "commit": "https://github.com/openclaw/skills/commit/40854235b16cb73296784a90db9f59a03ad6aa64"
+    }
+  ]
 }
