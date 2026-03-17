@@ -1,28 +1,23 @@
 ---
-name: "Thunder"
-version: "0.1.0"
-description: "迅雷（英文） AI Skill - 智能助手"
-tags: ["video", "app", "integration"]
+name: "迅雷"
+version: "1.0.0"
+description: "迅雷（重定向到 xunlei 技能）"
+tags: ["download", "redirect"]
 author: "ClawSkills Team"
-status: "coming_soon"
+category: "tools"
+redirect_to: "xunlei"
 ---
 
-# Thunder Skill
+# 迅雷 → xunlei
 
-🚧 **开发中 / Coming Soon**
+此技能已合并到 `xunlei` 技能中。
 
-这是 Thunder 的 OpenClaw Skill，目前正在开发中。
+请使用 `xunlei` 获取完整功能。
 
-## 计划功能
+## 为什么重定向？
 
-- AI 增强功能
-- 智能分析
-- 自动化操作
-
-## 联系我们
-
-如果你对此 Skill 感兴趣或希望合作开发，请联系我们。
+`thunder` 和 `xunlei` 指向同一个产品，为避免重复维护，统一使用 `xunlei` 作为主技能。
 
 ---
 
-**最后更新**: 2026-03-08
+**最后更新**: 2026-03-16
