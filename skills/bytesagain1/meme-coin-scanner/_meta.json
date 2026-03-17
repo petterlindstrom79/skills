@@ -3,11 +3,16 @@
   "slug": "meme-coin-scanner",
   "displayName": "Meme Coin Scanner",
   "latest": {
-    "version": "2.3.4",
-    "publishedAt": 1773666489547,
-    "commit": "https://github.com/openclaw/skills/commit/7b1c6e39f5dd1dcb3a40be20588f8dcd56c890d7"
+    "version": "2.0.0",
+    "publishedAt": 1773773509253,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.4",
+      "publishedAt": 1773666489547,
+      "commit": "https://github.com/openclaw/skills/commit/7b1c6e39f5dd1dcb3a40be20588f8dcd56c890d7"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1773361444977,
