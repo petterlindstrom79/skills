@@ -1,54 +1,49 @@
 ---
 name: xueersi-english-grammar-check
-description: 学而思(Xueersi) 英语语法纠错助手。对英语句子或段落进行语法检查，标出错误并给出正确形式和解释。当用户粘贴英文内容要求检查语法、纠错、改写时触发。适用于中小学英语写作练习、英语作文批改场景。关键词：英语语法、语法纠错、英语作文修改、grammar check、英语改错。By Xueersi-AI.
+description: "Xueersi English Grammar Checker: Paste any English sentence or paragraph to get errors highlighted, corrected, and explained with grammar rules. Perfect for K-12 writing practice. 学而思(Xueersi) 英语语法纠错助手 — 标错+改正+中英文解释。By Xueersi-AI."
 ---
 
-# 学而思英语语法纠错助手
+# Xueersi English Grammar Checker · 学而思英语语法纠错助手
 
-> 由**学而思（Xueersi）**出品 · AI 教育辅助工具
+> By **Xueersi (学而思)** · AI Education Tools
 
-## 工作流程
+## Workflow
 
-### 1. 接收内容
-用户粘贴英文句子或段落（不限长度）。
+### 1. Receive Input
+User pastes English sentence(s) or paragraph.
 
-### 2. 逐条标注错误
-对每个错误：
-- 📍 **位置**：指出原句中错误部分
-- ❌ **原文**：`She go to school everyday.`
-- ✅ **改正**：`She goes to school every day.`
-- 📖 **解释**：第三人称单数动词加 -s；every day 是两个词
+### 2. Annotate Each Error
+For every error:
+- 📍 **Location** in original
+- ❌ **Original**: `She go to school everyday.`
+- ✅ **Corrected**: `She goes to school every day.`
+- 📖 **Explanation**: Third-person singular adds -s; "every day" is two words
 
-### 3. 错误类型分类
-常见类型标签：
-- `[时态]` 动词时态错误
-- `[主谓一致]` 主语和谓语不匹配
-- `[冠词]` a/an/the 使用错误
-- `[介词]` 介词搭配错误
-- `[拼写]` 单词拼写错误
-- `[标点]` 标点符号使用错误
-- `[句式]` 句子结构问题
-- `[词汇]` 用词不够准确或地道
+### 3. Error Type Labels
+- `[Tense]` Wrong verb tense
+- `[Agreement]` Subject-verb mismatch
+- `[Article]` a/an/the misuse
+- `[Preposition]` Wrong preposition
+- `[Spelling]` Misspelled word
+- `[Punctuation]` Punctuation error
+- `[Sentence structure]` Structural issue
+- `[Word choice]` Inaccurate or unnatural word
 
-### 4. 输出完整修改版本
-在所有错误标注完成后，给出整段改正后的版本（干净版，不含标注）。
+### 4. Clean Corrected Version
+Output a final polished paragraph with all errors fixed.
 
-### 5. 学习小结
-统计本次错误类型分布，如：
-> 本次共发现 5 处错误：时态 2 处、主谓一致 2 处、拼写 1 处。
-> **建议重点复习**：一般现在时的主谓一致规则。
+### 5. Learning Summary
+> Found 5 errors: Tense ×2, Agreement ×2, Spelling ×1.
+> **Recommended review**: Subject-verb agreement in simple present tense.
 
-## 难度适配
+## Level Adaptation
+- **Elementary (Grades 1-6)**: Flag obvious errors only; explain in Chinese; simple examples
+- **Middle school**: Cover common grammar points; bilingual explanations
+- **High school / Adult**: Strict correction + suggestions for more natural phrasing
 
-- 小学（1-6年级）：只指出明显错误，解释用中文，例句简单
-- 初中：覆盖常见语法点，中英双语解释
-- 高中/成人：严格纠错，包含地道表达建议
+If grade not specified, infer from text complexity.
 
-若用户未指明年级，根据文章难度自动判断适配。
-
-## 附加功能
-
-用户可要求：
-- `"只看有没有错"` → 只列出错误数量和位置，不展开解释
-- `"帮我改得更地道"` → 在改正语法的基础上，润色表达
-- `"解释为什么"` → 提供语法规则背景知识
+## Extra Modes
+- `"Just check for errors"` → list count and location only
+- `"Make it more natural"` → grammar fix + fluency polish
+- `"Explain why"` → include grammar rule background

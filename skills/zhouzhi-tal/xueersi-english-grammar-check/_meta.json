@@ -1,11 +1,17 @@
 {
   "owner": "zhouzhi-tal",
   "slug": "xueersi-english-grammar-check",
-  "displayName": "学而思英语语法纠错",
+  "displayName": "Xueersi English Grammar Checker",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773737407532,
-    "commit": "https://github.com/openclaw/skills/commit/bbdd282ec9b7c78649015be69fd3a73c6be043b5"
+    "version": "1.0.1",
+    "publishedAt": 1773741269086,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773737407532,
+      "commit": "https://github.com/openclaw/skills/commit/bbdd282ec9b7c78649015be69fd3a73c6be043b5"
+    }
+  ]
 }
