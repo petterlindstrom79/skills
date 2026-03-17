@@ -1,0 +1,11 @@
+{
+  "owner": "openwaygate",
+  "slug": "youtube-comment-thread",
+  "displayName": "YouTube Comment Thread",
+  "latest": {
+    "version": "0.10.7-dev",
+    "publishedAt": 1773496883940,
+    "commit": null
+  },
+  "history": []
+}
