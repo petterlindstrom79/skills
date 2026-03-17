@@ -1,0 +1,11 @@
+{
+  "owner": "haoruilee",
+  "slug": "find-agent-service",
+  "displayName": "Find Agent-Native Service",
+  "latest": {
+    "version": "1.4.0",
+    "publishedAt": 1773643918910,
+    "commit": null
+  },
+  "history": []
+}
