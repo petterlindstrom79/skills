@@ -1,0 +1,11 @@
+{
+  "owner": "boehner",
+  "slug": "snapapi",
+  "displayName": "SnapAPI — Web Intelligence for AI Agents",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773698662293,
+    "commit": null
+  },
+  "history": []
+}
