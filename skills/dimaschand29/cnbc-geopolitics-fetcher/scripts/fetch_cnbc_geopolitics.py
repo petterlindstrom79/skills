@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 """
-CNBC Geopolitics Fetcher - Enhanced Fact Extraction
-Fetches geopolitical news from CNBC and extracts real facts from article content.
+CNBC Geopolitics Fetcher - COMPLETE UPDATED VERSION
+Format: No '### Article' header, keep title and all other fields
+
+FEATURES:
+- Scrapes latest CNBC geopolitical articles
+- Extracts COMPLETE sentences - NO truncation
+- Posts ONE BY ONE to Discord (1-by-1, not batched)
+- Tracks sent URLs to avoid duplicates
+- NEW FORMAT: No '### Article' header at top
+
+USAGE:
+  python fetch_cnbc_geopolitics.py --webhook "DISCORD_WEBHOOK_URL" --verbose
 """
 
 import argparse
 import json
+import os
 import re
 import sys
 from html import unescape
@@ -25,21 +36,21 @@ def parse_args():
     parser.add_argument('--count', type=int, default=5)
     parser.add_argument('--config', type=str)
     parser.add_argument('--output', type=str)
+    parser.add_argument('--verbose', action='store_true')
     return parser.parse_args()
 
 
 def load_webhook_from_config(config_path):
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            match = re.search(r'https://discord\.com/api/webhooks/\S+', content)
+            match = re.search(r'https://discord\.com/api/webhooks/\S+', f.read())
             return match.group(0) if match else None
     except FileNotFoundError:
         return None
 
 
 def http_get(url, headers=None):
-    headers = headers or {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    headers = headers or {'User-Agent': 'Mozilla/5.0'}
     if HAS_REQUESTS:
         resp = requests.get(url, headers=headers, timeout=30)
         resp.raise_for_status()
@@ -56,8 +67,7 @@ def http_post_json(url, data):
     if HAS_REQUESTS:
         resp = requests.post(url, data=json_data, headers=headers, timeout=30)
         if resp.status_code >= 400:
-            raise Exception(f"Discord error {resp.status_code}: {resp.text[:200]}")
-        # Discord returns 204 No Content on success - empty body is normal
+            raise Exception(f"Discord error {resp.status_code}")
         if resp.status_code == 204:
             return {'status': 'ok'}
         try:
@@ -68,28 +78,20 @@ def http_post_json(url, data):
         req = urllib.request.Request(url, data=json_data, headers=headers)
         with urllib.request.urlopen(req, timeout=30) as r:
             body = r.read().decode('utf-8')
-            if not body:
-                return {'status': 'ok'}
-            return json.loads(body)
+            return json.loads(body) if body else {'status': 'ok'}
 
 
 def extract_articles_from_html(html):
-    """Extract article URLs from CNBC HTML."""
     articles = []
-    
-    # Pattern: CNBC article URLs with year
     pattern = r'href="(https://www\.cnbc\.com/(\d{4})/[^"]+)"'
     matches = re.findall(pattern, html, re.IGNORECASE)
     
     for m in matches:
         url = m[0]
-        # Skip non-article pages
         if any(x in url.lower() for x in ['/video/', '/premium/', '/pro/', 'tag/', 'section/', 'live']):
             continue
-        
         articles.append({'url': url, 'title': 'pending', 'year': m[1]})
     
-    # Dedupe
     seen = set()
     unique = []
     for a in articles:
@@ -101,48 +103,45 @@ def extract_articles_from_html(html):
 
 
 def fetch_article_details(url):
-    """Fetch article and extract real content."""
     try:
         html = http_get(url)
-        return extract_real_facts(html, url)
+        return extract_true_complete_facts(html, url)
     except Exception as e:
         print(f"Error fetching {url}: {e}", file=sys.stderr)
         return None
 
 
-def extract_real_facts(html, url):
-    """Extract actual facts from article content using BeautifulSoup."""
-    metadata = {'url': url, 'title': '', 'market_impact': '', 'hard_facts': []}
+def extract_true_complete_facts(html, url):
+    """Extract TRUE complete facts - NO TRUNCATION."""
+    metadata = {'url': url, 'title': '', 'market_impact': '', 'hard_facts': [], 'summary': ''}
     
-    # Parse HTML with BeautifulSoup
     try:
         soup = BeautifulSoup(html, 'html.parser')
     except Exception:
-        # Fallback to regex if BS4 fails
         return extract_facts_regex(html, url)
     
-    # Extract title
+    # Title
     og_title = soup.find('meta', property='og:title')
     if og_title and og_title.get('content'):
         metadata['title'] = clean_title(unescape(og_title['content']))
     
-    # Extract article body - CNBC uses specific classes
+    # Article body
     article_body = soup.find('div', class_='ArticleBody-wrapper') or soup.find('div', class_='article-body') or soup.find('article')
     
     if not article_body:
-        # Fallback: get all paragraph text
         paragraphs = soup.find_all('p')
-        full_text = ' '.join(p.get_text() for p in paragraphs[:20])
+        full_text = ' '.join(p.get_text() for p in paragraphs[:25])
     else:
         full_text = article_body.get_text(separator=' ', strip=True)
     
-    # Extract description for fallback
+    # Description
     og_desc = soup.find('meta', property='og:description')
     description = unescape(og_desc['content']) if og_desc and og_desc.get('content') else ''
     
-    # Now extract REAL facts from the text
-    metadata['hard_facts'] = extract_facts_from_text(full_text, description)
+    # Extract TRUE complete facts
+    metadata['hard_facts'] = extract_true_complete_facts_from_text(full_text, description)
     metadata['market_impact'] = extract_market_impact(full_text)
+    metadata['summary'] = generate_summary(full_text, description)
     
     if not metadata['title']:
         metadata['title'] = url.split('/')[-1].replace('-', ' ').title()
@@ -150,135 +149,183 @@ def extract_real_facts(html, url):
     return metadata
 
 
-def extract_facts_from_text(text, description=''):
-    """Extract 3 real hard facts from article text."""
+def extract_true_complete_facts_from_text(text, description=''):
+    """Extract TRUE complete facts - ABSOLUTELY NO TRUNCATION."""
     facts = []
     combined = (description + ' ' + text) if description else text
     
-    # 1. Find quoted statements (people saying things)
-    # Pattern: "quote" said/states/announced
-    quote_patterns = [
-        r'"([^"]{20,200})"\s*(?:said|says|stated|announced|declared|told|warned)',
-        r'(?:according to|per|source says)\s+([^.\n]{20,150})',
-    ]
+    # Normalize whitespace
+    combined = re.sub(r'\s+', ' ', combined)
     
-    for pattern in quote_patterns:
-        matches = re.findall(pattern, combined, re.IGNORECASE)
-        if matches:
-            facts.append(f"Official: {matches[0][:120]}")
-            break
+    # Split into sentences properly
+    sentences = re.split(r'(?<=[.!?])\s+', combined)
     
-    # 2. Find specific actions (military, diplomatic, economic)
-    action_keywords = {
-        'fired': 'military action',
-        'launched': 'military/diplomatic action',
-        'deployed': 'military movement',
-        'sanctions': 'economic action',
-        'troops': 'military deployment',
-        'missile': 'military action',
-        'summit': 'diplomatic event',
-        'talks': 'diplomatic engagement',
-        'strike': 'military action',
-        'attack': 'military action',
-        'agreement': 'diplomatic outcome',
-        'deal': 'economic/diplomatic outcome',
-    }
+    # Track which sentences we've used to avoid duplicates
+    used_sents = set()
     
-    for keyword, action_type in action_keywords.items():
-        pattern = rf'{keyword}[^.\n]{{20,150}}'
-        match = re.search(pattern, combined, re.IGNORECASE)
-        if match:
-            facts.append(f"{action_type.title()}: {match.group(0)[:120]}")
-            break
+    # 1. Find quoted statements (complete sentence with quote) - NO upper length limit
+    for sent in sentences:
+        if '"' in sent and len(sent) > 40:
+            if any(x in sent.lower() for x in ['said', 'says', 'stated', 'announced', 'told', 'warned']):
+                if sent not in used_sents:
+                    facts.append(f"Official: {sent}")
+                    used_sents.add(sent)
+                    break
     
-    # 3. Find numerical statistics with context
-    # Look for numbers with units (million, billion, percent, etc.)
-    stat_pattern = r'(\d+(?:,\d+)*(?:\.\d+)?)\s*(million|billion|percent|%|thousand|missiles|troops|vehicles)?'
-    stats = re.findall(stat_pattern, combined, re.IGNORECASE)
+    # 2. Find action sentences (military, diplomatic, economic) - NO upper length limit
+    action_words = ['fired', 'launched', 'deployed', 'sanctions', 'troops', 'missile', 
+                    'summit', 'talks', 'strike', 'attack', 'agreement', 'deal', 'obliterated',
+                    'target', 'military', 'defense', 'war', 'conflict']
     
-    if stats:
-        # Find context around the biggest number
-        for stat in stats[:3]:
-            num, unit = stat
-            # Get surrounding context
-            context_pattern = rf'[^.\n]{{0,30}}{num}[^.\n]{{0,50}}'
-            context = re.search(context_pattern, combined, re.IGNORECASE)
-            if context:
-                facts.append(f"Data: {context.group(0)[:120]}")
+    for sent in sentences:
+        sent_lower = sent.lower()
+        if any(word in sent_lower for word in action_words):
+            if len(sent) > 30 and sent not in used_sents:
+                facts.append(f"Action: {sent}")
+                used_sents.add(sent)
                 break
     
-    # 4. Find dates/deadlines
-    date_pattern = r'(?:by|before|after|until|deadline)\s+([^.\n]{10,80})'
-    date_match = re.search(date_pattern, combined, re.IGNORECASE)
-    if date_match and len(facts) < 3:
-        facts.append(f"Timeline: {date_match.group(1)[:100]}")
+    # 3. Find data/numbers sentences - NO upper length limit
+    for sent in sentences:
+        # Look for sentences with numbers + units
+        if re.search(r'\d+(?:,\d+)*(?:\.\d+)?\s*(?:million|billion|percent|%|thousand|barrel|\$)', sent, re.IGNORECASE):
+            if len(sent) > 30 and sent not in used_sents:
+                facts.append(f"Data: {sent}")
+                used_sents.add(sent)
+                break
     
-    # 5. Find location-specific info
-    location_pattern = r'(?:in|at|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)(?:[^.\n]{0,50})'
-    loc_matches = re.findall(location_pattern, combined)
-    if loc_matches and len(facts) < 3:
-        facts.append(f"Location: {loc_matches[0]} referenced")
+    # 4. Find timeline sentences - NO upper length limit
+    for sent in sentences:
+        if any(x in sent.lower() for x in ['by ', 'before ', 'after ', 'until ', 'deadline', 'within ', 'expected']):
+            if len(sent) > 30 and sent not in used_sents:
+                facts.append(f"Timeline: {sent}")
+                used_sents.add(sent)
+                break
     
-    # Ensure we have at least 3 meaningful facts
-    while len(facts) < 3:
+    # 5. Find analyst/forecast sentences (for Polymarket relevance) - NO upper length limit
+    analyst_words = ['analyst', 'forecast', 'predict', 'expect', 'project', 'estimate', 
+                     'consensus', 'outlook', 'guidance', 'probability', 'odds',
+                     'likely', 'unlikely', 'scenario', 'risk', 'recession', 'stagflation']
+    for sent in sentences:
+        sent_lower = sent.lower()
+        if any(word in sent_lower for word in analyst_words):
+            if len(sent) > 30 and sent not in used_sents:
+                facts.append(f"Analyst: {sent}")
+                used_sents.add(sent)
+                break
+    
+    # 6. Find Polymarket/prediction market relevant sentences - NO upper length limit
+    polymarket_words = ['polymarket', 'prediction market', 'betting', 'wager', 'odds', 
+                        'probability', 'chance', 'likelihood', 'market implies', 'pricing in']
+    for sent in sentences:
+        sent_lower = sent.lower()
+        if any(word in sent_lower for word in polymarket_words):
+            if len(sent) > 30 and sent not in used_sents:
+                facts.append(f"Market: {sent}")
+                used_sents.add(sent)
+                break
+    
+    # 7. If still need facts, take first meaningful sentences from description
+    while len(facts) < 5:
         if description:
-            # Use description as fallback but make it specific
-            desc_facts = re.split(r'[.!?]', description)
-            for df in desc_facts:
-                if len(df) > 20:
-                    facts.append(f"Context: {df[:120]}")
-                    break
+            desc_sents = re.split(r'(?<=[.!?])\s+', description)
+            for sent in desc_sents:
+                if len(sent) > 40 and sent not in used_sents:
+                    if not any(x in sent.lower() for x in ['copyright', 'terms', 'privacy']):
+                        facts.append(f"Context: {sent}")
+                        used_sents.add(sent)
+                        break
         else:
-            # Last resort: summarize topic from URL
-            url_slug = url.split('/')[-1].replace('-', ' ')
-            facts.append(f"Topic: {url_slug[:100]}")
+            for sent in sentences[:5]:
+                if len(sent) > 40 and sent not in used_sents:
+                    if not any(x in sent.lower() for x in ['copyright', 'subscribe', 'cookie']):
+                        facts.append(f"Info: {sent}")
+                        used_sents.add(sent)
+                        break
+        break
     
     return facts[:5]
 
 
 def extract_facts_regex(html, url):
-    """Fallback fact extraction without BeautifulSoup."""
-    metadata = {'url': url, 'title': '', 'market_impact': '', 'hard_facts': []}
+    """Fallback without BeautifulSoup."""
+    metadata = {'url': url, 'title': '', 'market_impact': '', 'hard_facts': [], 'summary': ''}
     
-    # Title from og:title
     title_match = re.search(r'<meta[^>]*property="og:title"[^>]*content="([^"]+)"', html, re.IGNORECASE)
     if title_match:
         metadata['title'] = clean_title(unescape(title_match.group(1)))
     
-    # Get text content (strip HTML tags)
     text = re.sub(r'<[^>]+>', ' ', html)
     text = re.sub(r'\s+', ' ', text)
     
-    metadata['hard_facts'] = extract_facts_from_text(text)
+    metadata['hard_facts'] = extract_true_complete_facts_from_text(text)
     metadata['market_impact'] = extract_market_impact(text)
     
     return metadata
 
 
 def extract_market_impact(text):
-    """Extract market impact data from text."""
+    """Extract complete market impact - full sentences with analyst context. NO TRUNCATION."""
     impacts = []
     
-    # Oil/Energy
-    oil_match = re.search(r'(?:oil|crude|WTI|Brent)[^.\n]*(?:\$?\d+\.?\d*|barrel)', text, re.IGNORECASE)
-    if oil_match:
-        impacts.append(f"Energy: {oil_match.group(0)[:60]}")
+    # Split into sentences
+    sentences = re.split(r'(?<=[.!?])\s+', text)
     
-    # Stocks
-    stock_match = re.search(r'(S&P[^.\n]*|NASDAQ[^.\n]*|Dow[^.\n]*|Stoxx[^.\n]*)', text, re.IGNORECASE)
-    if stock_match:
-        impacts.append(f"Stocks: {stock_match.group(1)[:50]}")
+    # Find oil/energy sentences - NO length limit
+    for sent in sentences:
+        if any(x in sent.lower() for x in ['oil', 'crude', 'WTI', 'Brent', 'barrel', 'energy']):
+            if len(sent) > 20:  # Only minimum length check
+                impacts.append(f"Energy: {sent}")
+                break
     
-    # Currency
-    curr_match = re.search(r'(dollar[^.\n]*|EUR/USD[^.\n]*|currency[^.\n]*)', text, re.IGNORECASE)
-    if curr_match:
-        impacts.append(f"Currency: {curr_match.group(1)[:50]}")
+    # Find stock sentences - NO length limit
+    for sent in sentences:
+        if any(x in sent.lower() for x in ['S&P', 'NASDAQ', 'Dow', 'Stoxx', 'stock', 'market']):
+            if len(sent) > 20:
+                impacts.append(f"Stocks: {sent}")
+                break
     
-    return '; '.join(impacts[:3]) if impacts else 'Market impact detailed in article'
+    # Find currency sentences - NO length limit
+    for sent in sentences:
+        if any(x in sent.lower() for x in ['dollar', 'EUR', 'USD', 'currency', 'exchange']):
+            if len(sent) > 20:
+                impacts.append(f"Currency: {sent}")
+                break
+    
+    # Find analyst/economic forecast sentences - NO length limit
+    for sent in sentences:
+        if any(x in sent.lower() for x in ['analyst', 'economist', 'forecast', 'gdp', 'inflation', 'fed', 'interest rate', 'recession']):
+            if len(sent) > 20:
+                impacts.append(f"Analyst: {sent}")
+                break
+    
+    # Find Polymarket/prediction market sentences - NO length limit
+    for sent in sentences:
+        if any(x in sent.lower() for x in ['polymarket', 'prediction', 'odds', 'probability', 'betting', 'market pricing']):
+            if len(sent) > 20:
+                impacts.append(f"Polymarket: {sent}")
+                break
+    
+    return '; '.join(impacts[:5]) if impacts else 'Market impact detailed in article'
+
+
+def generate_summary(text, description=''):
+    combined = (description + ' ' + text) if description else text
+    sentences = re.split(r'(?<=[.!?])\s+', combined)
+    
+    summary_sents = []
+    for sent in sentences[:5]:
+        sent = sent.strip()
+        if 40 < len(sent) < 250:
+            if not any(x in sent.lower() for x in ['copyright', 'terms', 'privacy', 'cookie', 'subscribe']):
+                summary_sents.append(sent)
+                if len(summary_sents) >= 2:
+                    break
+    
+    return '. '.join(summary_sents) + '.' if summary_sents else ''
 
 
 def clean_title(title):
-    """Remove editorial adjectives."""
     editorial = ['stunning', 'grim', 'worrisome', 'shocking', 'breaking', 'major', 'huge', 'massive', 'critical', 'urgent', 'dramatic', 'surprising']
     for word in editorial:
         title = re.sub(rf'\b{word}\b', '', title, flags=re.IGNORECASE)
@@ -289,55 +336,103 @@ def clean_title(title):
     return title
 
 
-def format_briefing(articles):
-    """Format briefing for Discord (max 2000 chars)."""
-    output = []
-    total_chars = 0
-    max_chars = 1900
+def format_single_article(article):
+    """Format a SINGLE article for Discord posting (one at a time) - NO TRUNCATION.
+    NEW FORMAT: No '### Article' header at the top."""
+    if not article.get('title'):
+        return None
     
-    for article in articles:
-        if not article.get('title'):
-            continue
-        
-        title = article['title'][:70] + ('...' if len(article['title']) > 70 else '')
-        market = article.get('market_impact', 'See article')
-        if len(market) > 60:
-            market = market[:57] + '...'
-        
-        facts = article.get('hard_facts', ['No facts extracted'])[:3]
-        facts_text = ''
-        for f in facts:
-            f_clean = f[:110] + ('...' if len(f) > 110 else '')
-            facts_text += f"  - {f_clean}\n"
-        
-        entry = f"""---
-**{title}**
-- URL: {article['url']}
-- Market: {market}
-- Facts:
-{facts_text}---
-"""
-        
-        if total_chars + len(entry) > max_chars:
-            break
-        
-        output.append(entry)
-        total_chars += len(entry)
+    # Title: use full title (Discord handles long titles)
+    title = article['title']
     
-    return '\n'.join(output) if output else 'No articles found'
+    # Market: use complete market impact string
+    market = article.get('market_impact', 'See article')
+    
+    # Facts: use complete sentences as-is (NO truncation)
+    facts = article.get('hard_facts', ['No facts extracted'])[:5]
+    facts_text = ''
+    for f in facts:
+        # No truncation - use complete sentence as extracted
+        facts_text += f"  - {f}\n"
+    
+    # NEW FORMAT: Remove '### Article' and keep everything else
+    entry = f"**{title}**\n\n**URL:** {article['url']}\n\n**Market Impact:** {market}\n\n**Hard Facts:**\n{facts_text.strip()}\n\n*(Raw data - no editorial analysis)*"
+    
+    return entry
 
 
-def post_to_discord(webhook_url, content):
-    if len(content) > 2000:
-        content = content[:1995] + '...'
+def post_single_article(article, num, webhook_url):
+    """Post ONE article as a single Discord message - split if exceeds 2000 chars."""
+    content = format_single_article(article)
+    if not content:
+        return False
     
-    payload = {'content': content, 'username': 'Geopolitical Intel'}
+    # Discord limit: 2000 characters per message
+    DISCORD_LIMIT = 2000
     
     try:
-        http_post_json(webhook_url, payload)
-        return True, 'Posted'
+        if len(content) <= DISCORD_LIMIT:
+            # Send as single message
+            payload = {'content': content, 'username': 'CNBC Geopolitics'}
+            http_post_json(webhook_url, payload)
+            print(f"[POSTED] Article {num}: {article['title'][:60]}...", file=sys.stderr)
+            return True
+        else:
+            # Split into parts: Title+URL+Market first, then Facts+disclaimer
+            title = article['title']
+            url = article['url']
+            market = article.get('market_impact', 'See article')
+            facts = article.get('hard_facts', ['No facts extracted'])[:5]
+            
+            part1 = f"\"\"\"**{title}**"
+            
+            parts.append(part1)
+            
+            # Part 2: Hard Facts + Disclaimer
+            facts_text = f"**Hard Facts:**\n  - "
+            for f in facts:
+                facts_text += f"{f}\n"
+            parts.append(facts_text)
+            parts.append("*(Raw data - no editorial analysis)*")
+            
+            # Send each part separately
+            for i, part in enumerate(parts):
+                if len(part) <= DISCORD_LIMIT:
+                    payload = {'content': part, 'username': 'CNBC Geopolitics'}
+                    http_post_json(webhook_url, payload)
+                    import time
+                    time.sleep(0.3)  # Small delay between parts
+            
+            print(f"[POSTED] Article {num} (split): {article['title'][:60]}...", file=sys.stderr)
+            return True
     except Exception as e:
-        return False, str(e)[:150]
+        print(f"Error posting article {num}: {e}", file=sys.stderr)
+        return False
+
+
+def load_sent_urls(history_path):
+    """Load previously sent URLs from history file."""
+    try:
+        with open(history_path, 'r', encoding='utf-8') as f:
+            urls = set()
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    urls.add(line)
+            return urls
+    except FileNotFoundError:
+        return set()
+
+
+def save_sent_url(history_path, url):
+    """Append a new URL to the history file."""
+    try:
+        with open(history_path, 'a', encoding='utf-8') as f:
+            f.write(f'{url}\n')
+        return True
+    except Exception as e:
+        print(f'Error saving URL to history: {e}', file=sys.stderr)
+        return False
 
 
 def main():
@@ -348,9 +443,16 @@ def main():
         print('Error: No webhook URL', file=sys.stderr)
         sys.exit(1)
     
+    # Determine history file path (relative to script location)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    history_path = os.path.join(script_dir, '..', 'references', 'sent_urls.txt')
+    
+    # Load previously sent URLs
+    sent_urls = load_sent_urls(history_path)
+    print(f'Loaded {len(sent_urls)} previously sent URLs from history', file=sys.stderr)
+    
     print('Fetching CNBC geopolitical news...', file=sys.stderr)
     
-    # Fetch from multiple sections
     sections = [
         'https://www.cnbc.com/world/',
         'https://www.cnbc.com/',
@@ -366,7 +468,6 @@ def main():
         except Exception as e:
             print(f'Section error: {e}', file=sys.stderr)
     
-    # Filter for geopolitical topics
     geo_keywords = ['iran', 'china', 'russia', 'north korea', 'ukraine', 'israel', 
                     'middle east', 'tariff', 'sanctions', 'defense', 'military',
                     'foreign policy', 'trade', 'oil', 'energy', 'nato', 'putin', 'trump']
@@ -380,16 +481,26 @@ def main():
     
     print(f'Found {len(geo_articles)} geopolitical articles', file=sys.stderr)
     
-    # Fetch details with real fact extraction
     articles = []
+    skipped_count = 0
     for candidate in geo_articles[:15]:
         if len(articles) >= args.count:
             break
+        
+        # Skip if URL already sent before
+        if candidate['url'] in sent_urls:
+            if args.verbose:
+                print(f'SKIP (already sent): {candidate["url"]}', file=sys.stderr)
+            skipped_count += 1
+            continue
+        
         details = fetch_article_details(candidate['url'])
         if details and details.get('title'):
             articles.append(details)
-            print(f'Extracted: {details["title"][:50]}', file=sys.stderr)
+            if args.verbose:
+                print(f'Extracted: {details["title"][:60]}', file=sys.stderr)
     
+    # Print briefing (unchanged - for reference)
     briefing = format_briefing(articles)
     print('\n' + briefing, file=sys.stdout)
     
@@ -397,10 +508,47 @@ def main():
         with open(args.output, 'w', encoding='utf-8') as f:
             f.write(briefing)
     
-    success, msg = post_to_discord(webhook_url, briefing)
-    print(f'Discord: {msg}', file=sys.stderr)
+    # Post articles ONE BY ONE (not batched)
+    posted_count = 0
+    for i, article in enumerate(articles[:5], 1):
+        success = post_single_article(article, i, webhook_url)
+        if success:
+            # Save URL to history after successful post
+            save_sent_url(history_path, article['url'])
+            posted_count += 1
+        # Small delay between posts to avoid rate limiting
+        import time
+        time.sleep(0.5)
     
-    return 0 if success else 1
+    if posted_count > 0:
+        print(f'Discord: Posted {posted_count} new article(s)', file=sys.stderr)
+    else:
+        print('No new articles to post (all already sent before)', file=sys.stderr)
+        # Notify via stdout that no new content was found
+        print('NOTIFY_CHAT: No new CNBC articles found - all URLs already in history', file=sys.stdout)
+    
+    return 0 if posted_count > 0 else 1
+
+
+def format_briefing(articles):
+    """Format briefing - combine all articles into single message (for reference)."""
+    if not articles:
+        return 'No articles found'
+    
+    output = []
+    for i, article in enumerate(articles[:5], 1):
+        output.append(f"---\n### Article {i}\n")
+        output.append(f"**{article['title'][:100]}**\n\n")
+        url = article.get('url', 'N/A')
+        market = article.get('market_impact', 'See article')[:200] if article.get('market_impact') else 'Market impact in article'
+        facts = (article.get('hard_facts', []) or ['N/A'])[:3]
+        output.append(f"URL: {url}\n")
+        output.append(f"Market: {market}\n")
+        facts_text = '\n'.join([f"  - {f}" for f in facts])
+        output.append(f"Facts:\n{facts_text}")
+        output.append("---\n")
+    
+    return '\n'.join(output) if output else 'No articles found'
 
 
 if __name__ == '__main__':

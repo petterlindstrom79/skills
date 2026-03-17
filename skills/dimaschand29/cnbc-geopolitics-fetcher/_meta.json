@@ -3,9 +3,15 @@
   "slug": "cnbc-geopolitics-fetcher",
   "displayName": "Cnbc Geopolitics Fetcher",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773497644051,
-    "commit": "https://github.com/openclaw/skills/commit/82b545df21fdc60c4e31b11ee810bccbbae24d98"
+    "version": "1.0.2",
+    "publishedAt": 1773706092267,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773497644051,
+      "commit": "https://github.com/openclaw/skills/commit/82b545df21fdc60c4e31b11ee810bccbbae24d98"
+    }
+  ]
 }
