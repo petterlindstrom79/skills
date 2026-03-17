@@ -3,9 +3,15 @@
   "slug": "code-to-requirement-analyser",
   "displayName": "code-to-requirement-analyser",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1773391890177,
-    "commit": "https://github.com/openclaw/skills/commit/c25059d6a49586a3221905c9b7e6d9ed44aa8d55"
+    "version": "1.0.1",
+    "publishedAt": 1773711209817,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1773391890177,
+      "commit": "https://github.com/openclaw/skills/commit/c25059d6a49586a3221905c9b7e6d9ed44aa8d55"
+    }
+  ]
 }

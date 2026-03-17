@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-交易代码分析器 CLI v2.0
-统一命令行入口
+交易代码分析器 CLI v2.1
+统一命令行入口 - 支持缓存和错误恢复
 """
 import argparse
 import json
@@ -14,15 +14,18 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 # 导入解析器（支持可选导入）
 from parser.vue_parser import VueParser
+from parser.base import CacheManager
 
 try:
     from parser.react_parser import ReactParser
-except ImportError:
+except ImportError as e:
+    print(f"⚠️  ReactParser 导入警告: {e}", file=sys.stderr)
     ReactParser = None
 
 try:
     from parser.angular_parser import AngularParser
-except ImportError:
+except ImportError as e:
+    print(f"⚠️  AngularParser 导入警告: {e}", file=sys.stderr)
     AngularParser = None
 
 from analyzer.business_analyzer import TradeBusinessAnalyzer
@@ -31,18 +34,25 @@ from knowledge.builder import KnowledgeGraphBuilder
 
 def main():
     parser = argparse.ArgumentParser(
-        description="交易代码分析器 v2.0 - 智能分析交易维度前端代码",
+        description="交易代码分析器 v2.1 - 智能分析交易维度前端代码",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
   # 解析 Vue 文件
   python3 scripts/cli.py parse ./src/views/Order.vue
   
+  # 解析 React 文件（跳过缓存）
+  python3 scripts/cli.py parse ./src/views/Order.tsx --no-cache
+  
   # 完整分析并保存到知识库
   python3 scripts/cli.py full ./src/views/Order.vue --save-knowledge
   
   # 搜索知识库
   python3 scripts/cli.py knowledge --search "基金"
+  
+  # 管理缓存
+  python3 scripts/cli.py cache --stats
+  python3 scripts/cli.py cache --clear
         """
     )
     
@@ -59,6 +69,11 @@ def main():
     parse_parser.add_argument(
         "-o", "--output", 
         help="输出JSON文件路径（默认输出到控制台）"
+    )
+    parse_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="禁用缓存（强制重新解析）"
     )
     
     # 分析命令
@@ -80,6 +95,24 @@ def main():
         help="知识库根目录"
     )
     
+    # 缓存管理命令
+    cache_parser = subparsers.add_parser("cache", help="缓存管理")
+    cache_parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="显示缓存统计信息"
+    )
+    cache_parser.add_argument(
+        "--clear",
+        action="store_true",
+        help="清除所有缓存"
+    )
+    cache_parser.add_argument(
+        "--dir",
+        default="~/.openclaw/cache/trade-analyzer/",
+        help="缓存目录"
+    )
+    
     # 完整流程命令
     full_parser = subparsers.add_parser("full", help="执行完整分析流程（推荐）")
     full_parser.add_argument("file", help="代码文件路径")
@@ -97,6 +130,11 @@ def main():
         default="~/trade-analysis-reports/",
         help="报告输出目录"
     )
+    full_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="禁用缓存"
+    )
     
     args = parser.parse_args()
     
@@ -111,6 +149,8 @@ def main():
             result = cmd_analyze(args)
         elif args.command == "knowledge":
             result = cmd_knowledge(args)
+        elif args.command == "cache":
+            result = cmd_cache(args)
         elif args.command == "full":
             result = cmd_full(args)
         else:
@@ -122,11 +162,13 @@ def main():
         
     except Exception as e:
         print(f"❌ 错误: {str(e)}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 
 def cmd_parse(args):
-    """解析命令"""
+    """解析命令（带缓存支持）"""
     file_path = Path(args.file).expanduser().resolve()
     
     if not file_path.exists():
@@ -147,20 +189,34 @@ def cmd_parse(args):
             raise ValueError(f"无法自动识别文件类型: {ext}，请使用 --type 指定")
     
     # 选择解析器
+    use_cache = not args.no_cache
     if file_type == 'vue':
-        parser = VueParser(str(file_path))
+        parser = VueParser(str(file_path), use_cache=use_cache)
+        result = parser.parse_with_cache() if use_cache else parser.parse()
     elif file_type == 'react':
         if ReactParser is None:
-            raise NotImplementedError("React 解析器尚未实现")
-        parser = ReactParser(str(file_path))
+            raise NotImplementedError("React 解析器未正确导入")
+        parser = ReactParser(str(file_path), use_cache=use_cache)
+        result = parser.parse_with_cache() if use_cache else parser.parse()
     elif file_type == 'angular':
         if AngularParser is None:
-            raise NotImplementedError("Angular 解析器尚未实现")
-        parser = AngularParser(str(file_path))
+            raise NotImplementedError("Angular 解析器未正确导入")
+        parser = AngularParser(str(file_path), use_cache=use_cache)
+        result = parser.parse_with_cache() if use_cache else parser.parse()
     else:
         raise ValueError(f"不支持的类型: {file_type}")
     
-    result = parser.parse()
+    # 添加解析元数据
+    result["_parse_metadata"] = {
+        "timestamp": datetime.now().isoformat(),
+        "parser_type": file_type,
+        "cache_used": result.get("_from_cache", False),
+        "cache_hit": result.get("_cache_hit", False)
+    }
+    
+    # 移除内部缓存标记
+    result.pop("_from_cache", None)
+    result.pop("_cache_hit", None)
     
     if args.output:
         output_path = Path(args.output).expanduser()
@@ -184,6 +240,13 @@ def cmd_analyze(args):
     
     analyzer = TradeBusinessAnalyzer()
     result = analyzer.analyze(parsed_data)
+    
+    # 添加分析元数据
+    result["_analysis_metadata"] = {
+        "timestamp": datetime.now().isoformat(),
+        "source_file": str(parsed_file),
+        "analyzer_version": "2.1.0"
+    }
     
     if args.output:
         output_path = Path(args.output).expanduser()
@@ -258,67 +321,129 @@ def cmd_knowledge(args):
         }
 
 
+def cmd_cache(args):
+    """缓存管理命令"""
+    cache_manager = CacheManager(args.dir)
+    
+    if args.clear:
+        success = cache_manager.clear_cache()
+        return {
+            "action": "clear_cache",
+            "success": success,
+            "cache_dir": str(cache_manager.cache_dir)
+        }
+    
+    elif args.stats:
+        stats = cache_manager.get_cache_stats()
+        return {
+            "action": "cache_stats",
+            **stats
+        }
+    
+    else:
+        # 默认显示统计
+        stats = cache_manager.get_cache_stats()
+        return {
+            "action": "cache_info",
+            **stats,
+            "help": "使用 --stats 查看详情，--clear 清除缓存"
+        }
+
+
 def cmd_full(args):
-    """完整流程命令"""
+    """完整流程命令（带缓存支持）"""
     file_path = Path(args.file).expanduser().resolve()
     
     if not file_path.exists():
         raise FileNotFoundError(f"文件不存在: {file_path}")
     
+    use_cache = not args.no_cache
     print(f"🔍 开始分析: {file_path.name}", file=sys.stderr)
+    print(f"   缓存模式: {'启用' if use_cache else '禁用'}", file=sys.stderr)
     
     # 1. 解析
     print("  1/4 解析代码结构...", file=sys.stderr)
     ext = file_path.suffix.lower()
-    if ext == '.vue':
-        parser = VueParser(str(file_path))
-    else:
-        raise ValueError(f"暂不支持: {ext}，目前仅支持 .vue 文件")
     
-    parsed = parser.parse()
-    comp_count = len(parsed.get('components', []))
-    api_count = len(parsed.get('apis', []))
-    print(f"     ✓ 识别组件: {comp_count} 个", file=sys.stderr)
-    print(f"     ✓ 识别 API: {api_count} 个", file=sys.stderr)
+    try:
+        if ext == '.vue':
+            parser = VueParser(str(file_path), use_cache=use_cache)
+            parsed = parser.parse_with_cache() if use_cache else parser.parse()
+        elif ext in ['.jsx', '.tsx']:
+            if ReactParser is None:
+                raise NotImplementedError("React 解析器未正确导入")
+            parser = ReactParser(str(file_path), use_cache=use_cache)
+            parsed = parser.parse_with_cache() if use_cache else parser.parse()
+        elif ext in ['.component.ts', '.component.html']:
+            if AngularParser is None:
+                raise NotImplementedError("Angular 解析器未正确导入")
+            parser = AngularParser(str(file_path), use_cache=use_cache)
+            parsed = parser.parse_with_cache() if use_cache else parser.parse()
+        else:
+            raise ValueError(f"暂不支持: {ext}")
+        
+        # 检查是否来自缓存
+        from_cache = parsed.get("_from_cache", False)
+        if from_cache:
+            print(f"     ⚡ 命中缓存，跳过解析", file=sys.stderr)
+        
+        comp_count = len(parsed.get('components', []))
+        api_count = len(parsed.get('apis', []))
+        print(f"     ✓ 识别组件: {comp_count} 个", file=sys.stderr)
+        print(f"     ✓ 识别 API: {api_count} 个", file=sys.stderr)
+        
+    except Exception as e:
+        print(f"     ❌ 解析失败: {e}", file=sys.stderr)
+        raise
     
     # 2. 分析
     print("  2/4 推导业务需求...", file=sys.stderr)
-    analyzer = TradeBusinessAnalyzer()
-    analyzed = analyzer.analyze(parsed)
-    dimension = analyzed.get("trade_dimension", {})
-    trade_types = dimension.get("trade_type", ['未知'])
-    lifecycles = dimension.get("lifecycle", ['未知'])
-    req_count = len(analyzed.get("functional_requirements", []))
-    print(f"     ✓ 交易类型: {', '.join(trade_types)}", file=sys.stderr)
-    print(f"     ✓ 生命周期: {', '.join(lifecycles)}", file=sys.stderr)
-    print(f"     ✓ 功能需求: {req_count} 项", file=sys.stderr)
+    try:
+        analyzer = TradeBusinessAnalyzer()
+        analyzed = analyzer.analyze(parsed)
+        dimension = analyzed.get("trade_dimension", {})
+        trade_types = dimension.get("trade_type", ['未知'])
+        lifecycles = dimension.get("lifecycle", ['未知'])
+        req_count = len(analyzed.get("functional_requirements", []))
+        print(f"     ✓ 交易类型: {', '.join(trade_types)}", file=sys.stderr)
+        print(f"     ✓ 生命周期: {', '.join(lifecycles)}", file=sys.stderr)
+        print(f"     ✓ 功能需求: {req_count} 项", file=sys.stderr)
+    except Exception as e:
+        print(f"     ❌ 分析失败: {e}", file=sys.stderr)
+        raise
     
     # 3. 保存到知识库（可选）
     knowledge_id = None
     if args.save_knowledge:
         print("  3/4 沉淀到知识库...", file=sys.stderr)
-        base_path = Path(args.output_dir).expanduser().parent / "knowledge" / "trade"
-        base_path.mkdir(parents=True, exist_ok=True)
-        
-        builder = KnowledgeGraphBuilder(str(base_path))
-        node, edges = builder.add_knowledge(analyzed, str(file_path))
-        knowledge_id = node.id
-        edge_count = len(edges)
-        print(f"     ✓ 知识ID: {knowledge_id}", file=sys.stderr)
-        print(f"     ✓ 关联知识: {edge_count} 条", file=sys.stderr)
+        try:
+            base_path = Path(args.output_dir).expanduser().parent / "knowledge" / "trade"
+            base_path.mkdir(parents=True, exist_ok=True)
+            
+            builder = KnowledgeGraphBuilder(str(base_path))
+            node, edges = builder.add_knowledge(analyzed, str(file_path))
+            knowledge_id = node.id
+            edge_count = len(edges)
+            print(f"     ✓ 知识ID: {knowledge_id}", file=sys.stderr)
+            print(f"     ✓ 关联知识: {edge_count} 条", file=sys.stderr)
+        except Exception as e:
+            print(f"     ⚠️ 知识库保存失败: {e}", file=sys.stderr)
     else:
         print("  3/4 跳过知识库保存（使用 --save-knowledge 启用）", file=sys.stderr)
     
     # 4. 生成报告（可选）
     if args.generate_report:
         print("  4/4 生成分析报告...", file=sys.stderr)
-        report_path = Path(args.generate_report).expanduser()
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        report = generate_markdown_report(analyzed, str(file_path))
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(report)
-        print(f"     ✓ 报告已保存: {report_path}", file=sys.stderr)
+        try:
+            report_path = Path(args.generate_report).expanduser()
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            report = generate_markdown_report(analyzed, str(file_path))
+            with open(report_path, 'w', encoding='utf-8') as f:
+                f.write(report)
+            print(f"     ✓ 报告已保存: {report_path}", file=sys.stderr)
+        except Exception as e:
+            print(f"     ⚠️ 报告生成失败: {e}", file=sys.stderr)
     else:
         print("  4/4 跳过报告生成（使用 --generate-report 启用）", file=sys.stderr)
     
@@ -333,6 +458,10 @@ def cmd_full(args):
             "requirements_count": req_count,
             "rules_count": len(analyzed.get("business_rules", [])),
             "confidence": confidence
+        },
+        "cache_info": {
+            "used": use_cache,
+            "hit": from_cache if use_cache else False
         },
         "knowledge_id": knowledge_id,
         "suggestions": analyzed.get("suggestions", [])[:3]
