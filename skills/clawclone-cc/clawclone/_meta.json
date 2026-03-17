@@ -1,0 +1,11 @@
+{
+  "owner": "clawclone-cc",
+  "slug": "clawclone",
+  "displayName": "OpenClaw backup and synchronization tool - Pack, upload, download, and restore. Save the Soul of your OpenClaw.",
+  "latest": {
+    "version": "0.1.5",
+    "publishedAt": 1773592859446,
+    "commit": null
+  },
+  "history": []
+}
