@@ -3,9 +3,15 @@
   "slug": "godot-bridge",
   "displayName": "Godot  Game Claw Bridge",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1773471848200,
-    "commit": "https://github.com/openclaw/skills/commit/bd503e56989a5ba0b1e2047fb1bbc3eaac9dd199"
+    "version": "1.5.0",
+    "publishedAt": 1773507810699,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1773471848200,
+      "commit": "https://github.com/openclaw/skills/commit/bd503e56989a5ba0b1e2047fb1bbc3eaac9dd199"
+    }
+  ]
 }
