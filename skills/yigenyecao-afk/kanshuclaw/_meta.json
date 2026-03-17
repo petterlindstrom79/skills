@@ -3,9 +3,15 @@
   "slug": "kanshuclaw",
   "displayName": "kanshuclaw",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773495567713,
-    "commit": "https://github.com/openclaw/skills/commit/88d29c3067227d8692b09e6033c0f7bc5a62851b"
+    "version": "1.0.3",
+    "publishedAt": 1773581271933,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773495567713,
+      "commit": "https://github.com/openclaw/skills/commit/88d29c3067227d8692b09e6033c0f7bc5a62851b"
+    }
+  ]
 }
