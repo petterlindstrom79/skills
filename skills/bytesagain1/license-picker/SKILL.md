@@ -1,7 +1,9 @@
 ---
+version: "2.0.0"
 name: License Picker
 description: "Open Source License Picker. Use when you need license picker capabilities. Triggers on: license picker."
   开源协议选择器。协议对比、生成LICENSE文件、解释条款、商用指南、FAQ。License picker with comparison, generation, explanation, commercial guide. 开源、协议。
+author: BytesAgain
 ---
 # License Picker
 
