@@ -1,0 +1,11 @@
+{
+  "owner": "karanuppal",
+  "slug": "openclaw-credential-vault",
+  "displayName": "Credential Vault",
+  "latest": {
+    "version": "1.0.0-beta.6",
+    "publishedAt": 1773791383825,
+    "commit": null
+  },
+  "history": []
+}
