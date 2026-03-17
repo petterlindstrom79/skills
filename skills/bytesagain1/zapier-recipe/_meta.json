@@ -3,11 +3,16 @@
   "slug": "zapier-recipe",
   "displayName": "Zapier Recipe",
   "latest": {
-    "version": "2.3.1",
-    "publishedAt": 1773578486716,
-    "commit": "https://github.com/openclaw/skills/commit/684087f2de60abcb1c2fa4cc29d94edb10948f0a"
+    "version": "2.3.5",
+    "publishedAt": 1773667328704,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.1",
+      "publishedAt": 1773578486716,
+      "commit": "https://github.com/openclaw/skills/commit/684087f2de60abcb1c2fa4cc29d94edb10948f0a"
+    },
     {
       "version": "2.3.0",
       "publishedAt": 1773447705091,
