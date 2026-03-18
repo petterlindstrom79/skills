@@ -56,20 +56,28 @@ fi
 
 echo "[+] Uploaded / 已上传: $URL"
 
-# Clean up / 清理临时文件
+# Clean up temp dir only (created by mktemp above, contains only our packed/encrypted copies)
+# 仅清理临时目录（由上方 mktemp 创建，只包含我们的打包/加密副本）
 rm -rf "$TMPDIR"
 
-# Output Notes / 输出 Notes
+# ============================================================
+# Single message with two clearly separated sections
+# 一条消息，两个清晰分隔的部分
+# ============================================================
 echo ""
-echo "========================================="
-echo "  SKILL SHARE NOTES / 技能传授 Notes"
-echo "========================================="
+echo "═══ 📋 FOR ADMIN / 管理员请读 ═══"
 echo ""
 echo "📦 Skill / 技能: $DESC"
 echo "📁 Source / 来源: $BASENAME ($FILETYPE, $SIZE encrypted / 已加密)"
 echo "⏰ Expires in 24 hours / 24小时后过期"
 echo ""
-echo "--- Forward the following to the target OpenClaw / 转发以下内容给对方 OpenClaw ---"
+echo "👉 Please forward this entire message to the target agent."
+echo "👉 请将此完整消息转发给目标龙虾。"
+echo ""
+echo "The target agent will read the section below."
+echo "目标龙虾会读取下方内容。"
+echo ""
+echo "═══ 🦞 FOR TARGET AGENT / 目标龙虾请读 ═══"
 echo ""
 
 if [ "$FILETYPE" = "tar.gz" ]; then
@@ -129,9 +137,3 @@ rm -f /tmp/${BASENAME}.enc
 ⏰ Link expires in 24 hours, download ASAP. / 链接24小时后过期，请尽快下载。
 NOTES
 fi
-
-echo ""
-echo "--- End of forwarded content / 转发内容结束 ---"
-echo ""
-echo "🔑 Password / 密码: $PASSWORD"
-echo "🔗 URL / 链接: $URL"

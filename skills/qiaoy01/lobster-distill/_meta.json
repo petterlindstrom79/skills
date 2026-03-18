@@ -3,9 +3,15 @@
   "slug": "lobster-distill",
   "displayName": "Lobster Distill",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1773714489085,
-    "commit": "https://github.com/openclaw/skills/commit/16e0fec4ccd662d5b52f3a92aa3e6f9452079e11"
+    "version": "1.0.5",
+    "publishedAt": 1773791479757,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1773714489085,
+      "commit": "https://github.com/openclaw/skills/commit/16e0fec4ccd662d5b52f3a92aa3e6f9452079e11"
+    }
+  ]
 }
