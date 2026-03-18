@@ -1,0 +1,11 @@
+{
+  "owner": "jabir-srj",
+  "slug": "moodle-connector",
+  "displayName": "Moodle Connector",
+  "latest": {
+    "version": "1.0.6",
+    "publishedAt": 1773803219765,
+    "commit": null
+  },
+  "history": []
+}
