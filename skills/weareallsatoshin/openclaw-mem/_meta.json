@@ -3,11 +3,16 @@
   "slug": "openclaw-mem",
   "displayName": "OpenClaw Memory",
   "latest": {
-    "version": "2.1.0",
-    "publishedAt": 1770243101425,
-    "commit": "https://github.com/clawdbot/skills/commit/94ebd7300a84a737142ae6bb7f98277ce197c84e"
+    "version": "2.3.0",
+    "publishedAt": 1773783816822,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.1.0",
+      "publishedAt": 1770243101425,
+      "commit": "https://github.com/clawdbot/skills/commit/94ebd7300a84a737142ae6bb7f98277ce197c84e"
+    },
     {
       "version": "1.2.1",
       "publishedAt": 1770207930763,
