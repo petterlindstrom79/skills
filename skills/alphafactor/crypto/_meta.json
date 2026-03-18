@@ -1,11 +1,17 @@
 {
   "owner": "alphafactor",
   "slug": "crypto",
-  "displayName": "crypto",
+  "displayName": "Crypto Market",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1773117176571,
-    "commit": "https://github.com/openclaw/skills/commit/6a8bb51b392ff0ee588fa183297ee9f3a862ff79"
+    "version": "1.0.6",
+    "publishedAt": 1773795808760,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1773117176571,
+      "commit": "https://github.com/openclaw/skills/commit/6a8bb51b392ff0ee588fa183297ee9f3a862ff79"
+    }
+  ]
 }

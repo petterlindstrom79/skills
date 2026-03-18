@@ -1,239 +1,240 @@
 ---
-name: crypto
+name: Crypto Market
+slug: crypto
 description: Cryptocurrency market data and price alert monitoring tool based on CCXT. Supports multiple exchanges, real-time price tracking, and configurable price/volatility alerts. Use when the user needs to monitor crypto prices or set up trading alerts. Default exchange is Binance.
 ---
 
-# 加密货币行情与价格预警
+# Cryptocurrency Market & Price Alerts
 
-基于 CCXT 库的加密货币行情获取和价格监控预警工具，支持多交易所、实时监控和智能预警。
+A cryptocurrency market data fetching and price monitoring tool based on the CCXT library. It supports multiple exchanges, real-time monitoring, and smart alerts.
 
-## 功能特性
+## Features
 
-- 🏢 **多交易所支持** - 默认 Binance，支持 OKX、Bybit、Gate.io、KuCoin 等
-- 📊 **实时行情** - 获取最新价格、涨跌幅、成交量等信息
-- 📈 **K线数据** - 获取历史价格走势
-- 📖 **订单簿** - 查看买卖盘深度
-- 🔔 **价格预警** - 支持价格阈值、涨跌幅百分比预警
-- 👁️ **实时监控** - 持续监控价格变动
+- 🏢 **Multi-Exchange Support** - Defaults to Binance. Also supports OKX, Bybit, Gate.io, KuCoin, etc.
+- 📊 **Real-time Market Data** - Get the latest prices, price changes, volumes, and more.
+- 📈 **OHLCV Data (Candlesticks)** - Fetch historical price trends.
+- 📖 **Order Book** - View market depth (bids and asks).
+- 🔔 **Price Alerts** - Supports price thresholds and percentage change alerts.
+- 👁️ **Live Monitoring** - Continuously monitor price movements.
 
-## 前提条件
+## Prerequisites
 
-### 安装依赖
+### Install Dependencies
 
 ```bash
 pip3 install ccxt --user
 ```
 
-## 使用方法
+## Usage
 
-### 查看实时行情
+### Check Real-Time Prices
 
 ```bash
-# 默认使用 Binance
+# Default (Binance)
 python3 scripts/crypto.py ticker BTC/USDT
 
-# 使用其他交易所
+# Use other exchanges
 python3 scripts/crypto.py -e okx ticker ETH/USDT
 python3 scripts/crypto.py -e bybit ticker BTC/USDT
 ```
 
-**支持的交易所**：
-- `binance` - 币安（默认）
+**Supported Exchanges**:
+- `binance` - Binance (Default)
 - `okx` - OKX
 - `bybit` - Bybit
 - `gateio` - Gate.io
 - `kucoin` - KuCoin
-- `huobi` - 火币
+- `huobi` - Huobi
 - `coinbase` - Coinbase
 - `kraken` - Kraken
 - `bitfinex` - Bitfinex
 
-### 获取K线数据
+### Get OHLCV (Candlestick) Data
 
 ```bash
-# 获取1小时K线，最近24条
+# Get 1-hour candles, last 24 periods
 python3 scripts/crypto.py ohlcv BTC/USDT --timeframe 1h --limit 24
 
-# 获取日线数据
+# Get daily candles, last 30 periods
 python3 scripts/crypto.py ohlcv ETH/USDT --timeframe 1d --limit 30
 ```
 
-**时间周期**：
-- `1m` - 1分钟
-- `5m` - 5分钟
-- `15m` - 15分钟
-- `1h` - 1小时
-- `4h` - 4小时
-- `1d` - 1天
-- `1w` - 1周
-- `1M` - 1月
+**Timeframes**:
+- `1m` - 1 minute
+- `5m` - 5 minutes
+- `15m` - 15 minutes
+- `1h` - 1 hour
+- `4h` - 4 hours
+- `1d` - 1 day
+- `1w` - 1 week
+- `1M` - 1 month
 
-### 查看订单簿
+### View Order Book
 
 ```bash
 python3 scripts/crypto.py orderbook BTC/USDT --limit 10
 ```
 
-### 实时监控价格
+### Live Price Monitoring
 
 ```bash
-# 每10秒刷新（默认）
+# Refresh every 10 seconds (default)
 python3 scripts/crypto.py watch BTC/USDT
 
-# 每5秒刷新
+# Refresh every 5 seconds
 python3 scripts/crypto.py watch ETH/USDT --interval 5
 ```
 
-## 价格预警
+## Price Alerts
 
-### 添加预警
+### Add Alerts
 
-**价格突破预警：**
+**Price Threshold Alerts:**
 ```bash
-# BTC 价格突破 70000 USDT 时预警
+# Alert when BTC price breaks above 70000 USDT
 python3 scripts/crypto.py alert-add BTC/USDT above 70000
 
-# ETH 价格跌破 3000 USDT 时预警
+# Alert when ETH price drops below 3000 USDT
 python3 scripts/crypto.py alert-add ETH/USDT below 3000
 ```
 
-**涨跌幅预警：**
+**Percentage Change Alerts:**
 ```bash
-# BTC 涨幅超过 5% 时预警
+# Alert when BTC rises more than 5%
 python3 scripts/crypto.py alert-add BTC/USDT up_percent 5
 
-# ETH 跌幅超过 3% 时预警
+# Alert when ETH drops more than 3%
 python3 scripts/crypto.py alert-add ETH/USDT down_percent 3
 ```
 
-### 查看预警列表
+### View Alert List
 
 ```bash
 python3 scripts/crypto.py alert-list
 ```
 
-输出示例：
+Example Output:
 ```
-🔔 价格预警列表 (3 个):
+🔔 Price Alerts (3):
 
-ID                        交易对          交易所       条件                      状态
+ID                        Pair            Exchange     Condition                 Status
 ------------------------------------------------------------------------------------------
-BTC/USDT_1706941200       BTC/USDT        binance      价格 > 70000              ⏳监控中
-ETH/USDT_1706941300       ETH/USDT        okx          价格 < 3000               ⏳监控中
-BTC/USDT_1706941400       BTC/USDT        binance      涨幅 > 5%                 ⏳监控中
+BTC/USDT_1706941200       BTC/USDT        binance      Price > 70000             ⏳Monitoring
+ETH/USDT_1706941300       ETH/USDT        okx          Price < 3000              ⏳Monitoring
+BTC/USDT_1706941400       BTC/USDT        binance      Rise > 5%                 ⏳Monitoring
 ```
 
-### 检查预警
+### Check Alerts
 
 ```bash
-# 手动检查所有预警条件
+# Manually check all alert conditions
 python3 scripts/crypto.py alert-check
 ```
 
-当条件触发时，会显示：
+When a condition is triggered, it shows:
 ```
-⚠️  触发 1 个预警:
+⚠️  Triggered 1 alert:
 
-  🚀 BTC/USDT 涨幅达到 5.23%，当前价格: 71234.56
-  预警ID: BTC/USDT_1706941400
+  🚀 BTC/USDT rose by 5.23%, current price: 71234.56
+  Alert ID: BTC/USDT_1706941400
 ```
 
-### 删除预警
+### Remove Alerts
 
 ```bash
 python3 scripts/crypto.py alert-remove BTC/USDT_1706941200
 ```
 
-## 命令参考
+## Command Reference
 
-| 命令 | 功能 | 示例 |
+| Command | Function | Example |
 |------|------|------|
-| `ticker` | 实时行情 | `ticker BTC/USDT` |
-| `ohlcv` | K线数据 | `ohlcv BTC/USDT --timeframe 1h` |
-| `orderbook` | 订单簿 | `orderbook BTC/USDT` |
-| `watch` | 实时监控 | `watch BTC/USDT --interval 5` |
-| `alert-add` | 添加预警 | `alert-add BTC/USDT above 70000` |
-| `alert-remove` | 删除预警 | `alert-remove ID` |
-| `alert-list` | 列出预警 | `alert-list` |
-| `alert-check` | 检查预警 | `alert-check` |
+| `ticker` | Real-time prices | `ticker BTC/USDT` |
+| `ohlcv` | Candlestick data | `ohlcv BTC/USDT --timeframe 1h` |
+| `orderbook` | Order book | `orderbook BTC/USDT` |
+| `watch` | Live monitoring | `watch BTC/USDT --interval 5` |
+| `alert-add` | Add an alert | `alert-add BTC/USDT above 70000` |
+| `alert-remove` | Remove an alert | `alert-remove ID` |
+| `alert-list` | List alerts | `alert-list` |
+| `alert-check` | Check alerts | `alert-check` |
 
-### 全局参数
+### Global Arguments
 
-| 参数 | 简写 | 说明 | 默认值 |
+| Argument | Short | Description | Default |
 |------|------|------|--------|
-| `--exchange` | `-e` | 交易所 | `binance` |
-| `--timeframe` | `-t` | K线周期 | `1h` |
-| `--limit` | `-l` | 数据条数 | `24` |
-| `--interval` | `-i` | 刷新间隔(秒) | `10` |
+| `--exchange` | `-e` | Exchange name | `binance` |
+| `--timeframe` | `-t` | Candlestick timeframe | `1h` |
+| `--limit` | `-l` | Data limit (count) | `24` |
+| `--interval` | `-i` | Refresh interval (sec) | `10` |
 
-## 预警条件说明
+## Alert Conditions
 
-| 条件 | 说明 | 示例 |
+| Condition | Description | Example |
 |------|------|------|
-| `above` | 价格高于阈值 | `above 70000` |
-| `below` | 价格低于阈值 | `below 3000` |
-| `up_percent` | 涨幅超过百分比 | `up_percent 5` |
-| `down_percent` | 跌幅超过百分比 | `down_percent 3` |
+| `above` | Price goes above threshold | `above 70000` |
+| `below` | Price drops below threshold | `below 3000` |
+| `up_percent` | Price rises by % | `up_percent 5` |
+| `down_percent` | Price drops by % | `down_percent 3` |
 
-## 使用场景
+## Use Cases
 
-### 场景1：追踪特定价格
+### Scenario 1: Tracking specific price targets
 ```bash
-# BTC 突破前高预警
+# Alert when BTC breaks previous high
 python3 scripts/crypto.py alert-add BTC/USDT above 69000
 
-# 定期检查
+# Regularly check
 python3 scripts/crypto.py alert-check
 ```
 
-### 场景2：监控支撑位/阻力位
+### Scenario 2: Monitoring support/resistance levels
 ```bash
-# ETH 跌破关键支撑预警
+# ETH drops below key support
 python3 scripts/crypto.py alert-add ETH/USDT below 2800
 
-# BTC 突破阻力预警
+# BTC breaks resistance
 python3 scripts/crypto.py alert-add BTC/USDT above 72000
 ```
 
-### 场景3：波动率监控
+### Scenario 3: Volatility monitoring
 ```bash
-# 监控大幅波动
+# Monitor massive volatility
 python3 scripts/crypto.py alert-add BTC/USDT up_percent 8
 python3 scripts/crypto.py alert-add BTC/USDT down_percent 8
 ```
 
-### 场景4：多交易所比价
+### Scenario 4: Cross-exchange price comparison
 ```bash
-# 查看不同交易所价格
+# Check prices across different exchanges
 python3 scripts/crypto.py -e binance ticker BTC/USDT
 python3 scripts/crypto.py -e okx ticker BTC/USDT
 python3 scripts/crypto.py -e bybit ticker BTC/USDT
 ```
 
-## 常见问题
+## Troubleshooting
 
-**错误：ccxt 库未安装**
-→ 运行: `pip3 install ccxt --user`
+**Error: ccxt library not installed**
+→ Run: `pip3 install ccxt --user`
 
-**错误：不支持的交易所**
-→ 检查交易所名称拼写，查看支持的交易所列表
+**Error: Unsupported exchange**
+→ Check exchange spelling. Refer to the supported exchanges list.
 
-**错误：交易对不存在**
-→ 检查交易对格式，如 `BTC/USDT`、`ETH/USDT`
+**Error: Trading pair does not exist**
+→ Check trading pair format, e.g., `BTC/USDT`, `ETH/USDT`.
 
-**预警未触发**
-→ 确认预警条件设置正确，运行 `alert-check` 手动检查
+**Alert not triggering**
+→ Confirm alert conditions are correct. Run `alert-check` to check manually.
 
-**API 限制**
-→ 部分交易所有请求频率限制，使用 `--interval` 调整刷新间隔
+**API Limits**
+→ Some exchanges have strict rate limits. Use `--interval` to adjust the refresh frequency.
 
-## 配置文件
+## Configuration File
 
-预警配置存储在：`~/.config/crypto/alerts.json`
+Alert configurations are stored at: `~/.config/crypto/alerts.json`
 
-可以手动编辑此文件批量管理预警。
+You can manually edit this file to batch manage your alerts.
 
-## 参考
+## References
 
-- CCXT 文档: https://docs.ccxt.com/
-- 支持的交易所列表: [references/exchanges.md](references/exchanges.md)
+- CCXT Documentation: https://docs.ccxt.com/
+- Supported Exchanges List: [references/exchanges.md](references/exchanges.md)
