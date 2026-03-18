@@ -1,0 +1,11 @@
+{
+  "owner": "agenticio",
+  "slug": "dapp",
+  "displayName": "Dapp",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773759750310,
+    "commit": null
+  },
+  "history": []
+}
