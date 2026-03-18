@@ -1,0 +1,11 @@
+{
+  "owner": "asfamilybank",
+  "slug": "cn-stock-query",
+  "displayName": "Cn Stock Query",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1773828028048,
+    "commit": null
+  },
+  "history": []
+}
