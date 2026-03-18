@@ -1,0 +1,45 @@
+{
+  "game_id": "",
+  "player_name": "玩家",
+  "start_year": 1917,
+  "current_year": 1917,
+  "faction": {
+    "id": "",
+    "name": "",
+    "emoji": ""
+  },
+  "political_life": {
+    "total_years": 20,
+    "remaining_years": 20,
+    "current_round": 1,
+    "rounds_played": 0
+  },
+  "organizations": [
+    {
+      "name": "",
+      "type": "",
+      "founded_year": 0,
+      "members": 0,
+      "influence": 0,
+      "ideology": ""
+    }
+  ],
+  "legacy": {
+    "points": 0,
+    "achievements": [],
+    "historical_impact": []
+  },
+  "events": [
+    {
+      "year": 1917,
+      "round": 1,
+      "description": "",
+      "player_action": "",
+      "consequence": ""
+    }
+  ],
+  "mode": "political_life",
+  "status": "active",
+  "created_at": "",
+  "updated_at": ""
+}

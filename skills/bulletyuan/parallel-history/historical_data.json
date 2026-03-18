@@ -1,0 +1,252 @@
+{
+  "start_points": {
+    "year_0": {
+      "year": 1,
+      "title": "公元元年",
+      "description": "罗马帝国在奥古斯都统治下达到鼎盛，丝绸之路连接东西方，基督教在巴勒斯坦萌芽。",
+      "factions": [
+        {
+          "id": "rome",
+          "name": "罗马帝国",
+          "emoji": "🦅",
+          "description": "地中海霸主，维护罗马和平与秩序",
+          "advantages": ["军事强大", "经济繁荣", "法治完备"],
+          "disadvantages": ["扩张过度", "奴隶制矛盾", "腐败滋生"],
+          "key_figures": ["奥古斯都", "提比略"]
+        },
+        {
+          "id": "parthia",
+          "name": "帕提亚帝国",
+          "emoji": "🐎",
+          "description": "东方强国，丝绸之路的中间商",
+          "advantages": ["骑兵精锐", "贸易垄断", "地理位置"],
+          "disadvantages": ["内部纷争", "罗马威胁"],
+          "key_figures": ["弗拉特斯五世"]
+        },
+        {
+          "id": "han",
+          "name": "汉朝（西域）",
+          "emoji": "🐉",
+          "description": "东方帝国，控制丝绸之路东段",
+          "advantages": ["文明先进", "人口众多", "技术发达"],
+          "disadvantages": ["距离遥远", "信息滞后", "地方割据"],
+          "key_figures": ["王莽（改革派）", "刘秀（复汉派）"]
+        },
+        {
+          "id": "christianity",
+          "name": "早期基督教",
+          "emoji": "✝️",
+          "description": "新兴宗教，在罗马帝国边缘传播",
+          "advantages": ["信仰坚定", "组织严密", "平等理念"],
+          "disadvantages": ["被迫害", "规模小", "教义争议"],
+          "key_figures": ["彼得", "保罗"]
+        }
+      ]
+    },
+    "year_221": {
+      "year": 221,
+      "title": "三国鼎立",
+      "description": "东汉末年，群雄割据，魏蜀吴三国争霸天下。",
+      "factions": [
+        {
+          "id": "wei",
+          "name": "曹魏",
+          "emoji": "🐉",
+          "description": "占据北方，挟天子以令诸侯",
+          "advantages": ["领土广阔", "人口众多", "人才济济"],
+          "disadvantages": ["世家大族", "腐败严重"],
+          "key_figures": ["曹丕", "司马懿"]
+        },
+        {
+          "id": "shu",
+          "name": "蜀汉",
+          "emoji": "🦅",
+          "description": "延续汉室，占据西南",
+          "advantages": ["正统旗帜", "忠义之士", "地形险要"],
+          "disadvantages": ["国力弱小", "人才匮乏", "资源不足"],
+          "key_figures": ["刘备", "诸葛亮"]
+        },
+        {
+          "id": "wu",
+          "name": "东吴",
+          "emoji": "🐅",
+          "description": "江东政权，割据东南",
+          "advantages": ["水军强大", "经济发达", "地理优势"],
+          "disadvantages": ["偏安一隅", "进取不足"],
+          "key_figures": ["孙权", "周瑜"]
+        }
+      ]
+    },
+    "year_1789": {
+      "year": 1789,
+      "title": "法国大革命",
+      "description": "旧制度摇摇欲坠，第三等级要求改革，革命一触即发。",
+      "factions": [
+        {
+          "id": "monarchy",
+          "name": "保皇派",
+          "emoji": "👑",
+          "description": "维护君主制和贵族特权",
+          "advantages": ["军队支持", "外国援助", "传统权威"],
+          "disadvantages": ["民心尽失", "财政破产", "改革阻力"],
+          "key_figures": ["路易十六", "玛丽王后"]
+        },
+        {
+          "id": "constitutionalists",
+          "name": "君主立宪派",
+          "emoji": "⚖️",
+          "description": "温和改革派，主张限制王权",
+          "advantages": ["中产支持", "理性声音", "国际同情"],
+          "disadvantages": ["左右夹击", "妥协倾向"],
+          "key_figures": ["拉法耶特", "米拉波"]
+        },
+        {
+          "id": "jacobins",
+          "name": "雅各宾派",
+          "emoji": "🔥",
+          "description": "激进革命派，主张共和和人民主权",
+          "advantages": ["群众基础", "革命热情", "组织力强"],
+          "disadvantages": ["过激行为", "恐怖统治", "内外敌人"],
+          "key_figures": ["罗伯斯庇尔", "丹东"]
+        },
+        {
+          "id": "girondins",
+          "name": "吉伦特派",
+          "emoji": "🕊️",
+          "description": "温和共和派，主张战争和扩张",
+          "advantages": ["军事才能", "外省支持"],
+          "disadvantages": ["摇摆不定", "缺乏群众"],
+          "key_figures": ["布里索", "罗兰夫人"]
+        }
+      ]
+    },
+    "year_1917": {
+      "year": 1917,
+      "title": "十月革命",
+      "description": "第一次世界大战进入第三年，沙皇俄国濒临崩溃。彼得格勒的工人罢工，士兵哗变，革命一触即发。",
+      "factions": [
+        {
+          "id": "bolshevik",
+          "name": "布尔什维克",
+          "emoji": "🔴",
+          "description": "列宁的激进革命派，主张武装起义和无产阶级专政",
+          "advantages": ["组织严密", "群众基础", "革命理论"],
+          "disadvantages": ["内外敌人", "经济困难", "经验不足"],
+          "key_figures": ["列宁", "托洛茨基", "斯大林"]
+        },
+        {
+          "id": "menshevik",
+          "name": "孟什维克",
+          "emoji": "🟠",
+          "description": "温和社会主义者，主张与资产阶级合作",
+          "advantages": ["理论正统", "知识分子支持"],
+          "disadvantages": ["路线摇摆", "缺乏群众"],
+          "key_figures": ["马尔托夫", "策烈铁里"]
+        },
+        {
+          "id": "provisional_government",
+          "name": "临时政府",
+          "emoji": "🔵",
+          "description": "自由主义改革派，试图建立民主共和",
+          "advantages": ["国际承认", "知识分子支持"],
+          "disadvantages": ["继续战争", "土地问题未解决"],
+          "key_figures": ["克伦斯基", "李沃夫"]
+        },
+        {
+          "id": "white_army",
+          "name": "白军",
+          "emoji": "⚪",
+          "description": "保皇派和保守势力，试图恢复旧秩序",
+          "advantages": ["军官团", "外国援助"],
+          "disadvantages": ["缺乏统一领导", "失去民心"],
+          "key_figures": ["邓尼金", "高尔察克"]
+        }
+      ]
+    },
+    "year_1840": {
+      "year": 1840,
+      "title": "鸦片战争",
+      "description": "英国以武力打开中国大门，清朝面临三千年未有之大变局。",
+      "factions": [
+        {
+          "id": "qing_conservative",
+          "name": "保守派",
+          "emoji": "🏯",
+          "description": "维护传统秩序，拒绝改革",
+          "advantages": ["皇权支持", "传统势力"],
+          "disadvantages": ["盲目自大", "技术落后"],
+          "key_figures": ["穆彰阿", "耆英"]
+        },
+        {
+          "id": "qing_reformist",
+          "name": "改革派",
+          "emoji": "📚",
+          "description": "主张学习西方，师夷长技",
+          "advantages": ["开明思想", "实务经验"],
+          "disadvantages": ["阻力巨大", "资源有限"],
+          "key_figures": ["林则徐", "魏源"]
+        },
+        {
+          "id": "taiping",
+          "name": "太平天国",
+          "emoji": "✝️",
+          "description": "农民起义，建立地上天国",
+          "advantages": ["群众基础", "宗教号召", "军事才能"],
+          "disadvantages": ["意识形态混乱", "内部分裂"],
+          "key_figures": ["洪秀全", "杨秀清"]
+        }
+      ]
+    },
+    "year_1914": {
+      "year": 1914,
+      "title": "第一次世界大战",
+      "description": "萨拉热窝事件引爆欧洲火药桶，同盟国与协约国全面开战。",
+      "factions": [
+        {
+          "id": "central_powers",
+          "name": "同盟国",
+          "emoji": "⚔️",
+          "description": "德国、奥匈帝国、奥斯曼帝国联盟",
+          "advantages": ["军事强", "位置中心", "科技先进"],
+          "disadvantages": ["两线作战", "资源不足", "盟友虚弱"],
+          "key_figures": ["威廉二世", "兴登堡"]
+        },
+        {
+          "id": "allied_powers",
+          "name": "协约国",
+          "emoji": "🛡️",
+          "description": "英法俄三国协约",
+          "advantages": ["资源丰富", "海上优势", "殖民地众多"],
+          "disadvantages": ["协调困难", "俄国虚弱"],
+          "key_figures": ["乔治五世", "普恩加莱"]
+        },
+        {
+          "id": "neutral_powers",
+          "name": "中立国",
+          "emoji": "🕊️",
+          "description": "保持中立，观望战争",
+          "advantages": ["避免战火", "贸易获利"],
+          "disadvantages": ["压力巨大", "选择有限"],
+          "key_figures": ["威尔逊（美国）"]
+        }
+      ]
+    }
+  },
+  "legacy_evaluation_criteria": {
+    "glory_hall": {
+      "duration_years": 100,
+      "positive_impact": "深远正面影响",
+      "examples": ["组织延续百年以上", "思想成为主流", "推动历史进步"]
+    },
+    "historical_judgment": {
+      "duration_years": 50,
+      "mixed_impact": "褒贬不一",
+      "examples": ["组织延续50-100年", "影响有限但正面", "功过相抵"]
+    },
+    "pillar_of_shame": {
+      "duration_years": 0,
+      "negative_impact": "被历史否定",
+      "examples": ["组织迅速瓦解", "思想被抛弃", "被钉在耻辱柱上"]
+    }
+  }
+}
