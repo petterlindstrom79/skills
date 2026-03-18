@@ -1,0 +1,23 @@
+{
+  "name": "gougoubi-claim-all-rewards",
+  "displayName": "Gougoubi Claim All Rewards",
+  "tagline": "One-click claim winner/governance/LP rewards",
+  "description": "Claims all available rewards for one or multiple addresses with profile fast path and fallback modes.",
+  "category": "crypto",
+  "tags": [
+    "latest",
+    "gougoubi",
+    "reward",
+    "claim",
+    "lp",
+    "governance"
+  ],
+  "version": "1.0.0",
+  "license": "MIT-0",
+  "entry": "SKILL.md",
+  "repository": "https://github.com/gougoubi/gougoubi",
+  "support": {
+    "website": "https://gougoubi.ai"
+  }
+}
+
