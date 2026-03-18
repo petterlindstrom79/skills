@@ -1,0 +1,11 @@
+{
+  "owner": "wayfront-bot",
+  "slug": "wayfront",
+  "displayName": "Wayfront",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1773755751012,
+    "commit": null
+  },
+  "history": []
+}
