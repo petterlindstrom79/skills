@@ -1,0 +1,11 @@
+{
+  "owner": "agnicpay-prog",
+  "slug": "agnic-check-balance",
+  "displayName": "AgnicPay x402 Wallet check balance",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1773763282517,
+    "commit": null
+  },
+  "history": []
+}
