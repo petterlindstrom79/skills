@@ -1,0 +1,11 @@
+{
+  "owner": "zhentan",
+  "slug": "solana-wallet-rpc",
+  "displayName": "Solana Wallet Rpc",
+  "latest": {
+    "version": "1.4.0",
+    "publishedAt": 1773736417036,
+    "commit": null
+  },
+  "history": []
+}
