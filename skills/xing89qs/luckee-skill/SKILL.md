@@ -29,14 +29,14 @@ This single command fetches the plugin and installs its dependencies. Do **not**
 
 ### 2. Verify and configure the luckee CLI binary path
 
-After install, `luckee-cli` (the Python package) may have been placed in a directory that is **not** on the gateway process's PATH (e.g. `~/.local/bin`). You **must** locate the actual binary and set `binaryPath` explicitly:
+After install, `luckee-cli` (the Python package) may have been placed in a directory that is **not** on the gateway process's PATH (e.g. `~/.local/bin`). The plugin should use the `luckee` binary by default, so you **must** locate the actual binary and set `binaryPath` explicitly if needed:
 
 ```bash
 # Find where the binary was installed
-which luckee-cli 2>/dev/null || which luckee 2>/dev/null || python3 -c "import sysconfig; print(sysconfig.get_path('scripts', sysconfig.get_preferred_scheme('user')))" 2>/dev/null
+which luckee 2>/dev/null || which luckee-cli 2>/dev/null || python3 -c "import sysconfig; print(sysconfig.get_path('scripts', sysconfig.get_preferred_scheme('user')))" 2>/dev/null
 ```
 
-Check the discovered directory (e.g. `/home/node/.local/bin/`) for a file named `luckee-cli` or `luckee`. Then set the full path:
+Check the discovered directory (e.g. `/home/node/.local/bin/`) for a file named `luckee` or `luckee-cli`. Then set the full path:
 
 ```bash
 openclaw config set plugins.entries.luckee-tool.config.binaryPath "/full/path/to/luckee"
@@ -69,7 +69,7 @@ Confirm the plugin shows as loaded and the gateway is healthy. Do not ask the us
 
 ## Usage
 
-### Chat command
+### Skill command
 
 ```
 /luckee <query>
@@ -81,10 +81,6 @@ Example: `/luckee 查一下 asin B0DPJMTH4N 的信息 用skills`
 
 ```
 /luckee stop
-```
-or
-```
-/stop
 ```
 
 ### Set a token
@@ -112,7 +108,7 @@ Call the `luckee_query` tool with:
 }
 ```
 
-Only `query` is required. Auth context is handled by CLI/session state (via `luckee login` or the auto-login prompt when running `luckee` commands).
+Only `query` is required. For `/luckee token ...`, first call `luckee_set_token`, then call `luckee_query` if a query was included. Auth context is handled by CLI/session state or the auto-login prompt triggered by `luckee_query`.
 
 ## Token Management
 
@@ -130,7 +126,7 @@ This is the most common issue. Even when `luckee-cli` is installed, the gateway 
 **Step 1 — Locate the binary:**
 
 ```bash
-which luckee-cli 2>/dev/null || which luckee 2>/dev/null
+which luckee 2>/dev/null || which luckee-cli 2>/dev/null
 ```
 
 If that returns nothing, check common pip script directories:
@@ -143,9 +139,7 @@ python3 -c "import sysconfig; print(sysconfig.get_path('scripts', sysconfig.get_
 **Step 2 — If not installed, install it:**
 
 ```bash
-python -m pip install --upgrade \
-  --index-url https://test.pypi.org/simple/ \
-  luckee-cli
+python -m pip install --upgrade 'luckee-cli>=0.1.0'
 ```
 
 Then re-run Step 1 to find where it was placed.
@@ -179,7 +173,7 @@ Complete authorization in the browser, then retry the query. If running on a rem
 openclaw config set plugins.entries.luckee-tool.config.defaultToken "<your_token>"
 ```
 
-Note: The `/luckee login` chat command has a 15-second timeout. If the OAuth callback server cannot start properly in the gateway environment (empty `redirect_uri`), it will time out gracefully and suggest using a token instead.
+Note: `/luckee <query>` is available as a native plugin slash command. If the command is not available on a given surface, the agent can still fall back to `luckee_query`. If auth is missing, the plugin will surface login or token instructions automatically.
 
 ### Timeout
 
