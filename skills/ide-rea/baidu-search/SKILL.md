@@ -8,6 +8,17 @@ metadata: { "openclaw": { "emoji": "🔍︎",  "requires": { "bins": ["python3"]
 
 Search the web via Baidu AI Search API.
 
+## Prerequisites
+
+### API Key Configuration
+This skill requires a **BAIDU_API_KEY** to be configured in OpenClaw.
+
+If you don't have an API key yet, please visit:
+**https://console.bce.baidu.com/ai-search/qianfan/ais/console/apiKey**
+
+For detailed setup instructions, see:
+[references/apikey-fetch.md](references/apikey-fetch.md)
+
 ## Usage
 
 ```bash
