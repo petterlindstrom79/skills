@@ -1,11 +1,29 @@
 ---
 name: alicloud-compute-ecs
 description: Manage Alibaba Cloud Elastic Compute Service (ECS) via OpenAPI/SDK. Use for listing or creating instances, starting/stopping/rebooting, managing disks/snapshots/images/security groups/key pairs/ENIs, querying status, and troubleshooting workflows for this product.
+version: 1.0.0
 ---
 
 Category: service
 
 # Elastic Compute Service (ECS)
+
+## Validation
+
+```bash
+mkdir -p output/alicloud-compute-ecs
+python -m py_compile skills/compute/ecs/alicloud-compute-ecs/scripts/list_instances_all_regions.py
+python -m py_compile skills/compute/ecs/alicloud-compute-ecs/scripts/query_instance_usage.py
+python -m py_compile skills/compute/ecs/alicloud-compute-ecs/scripts/run_remote_command.py
+echo "py_compile_ok" > output/alicloud-compute-ecs/validate.txt
+```
+
+Pass criteria: command exits 0 and `output/alicloud-compute-ecs/validate.txt` is generated.
+
+## Output And Evidence
+
+- Save list/summarize outputs under `output/alicloud-compute-ecs/`.
+- Keep command arguments and region scope in each evidence file.
 
 Use Alibaba Cloud OpenAPI (RPC) with official SDKs or OpenAPI Explorer to manage ECS resources.
 Prefer the Python SDK for all examples and execution.
@@ -40,7 +58,7 @@ Prefer the Python SDK for all examples and execution.
 
 ### Python SDK quickstart (list instances)
 
-推荐使用虚拟环境（避免 PEP 668 的系统安装限制）。
+Virtual environment is recommended (avoid PEP 668 system install restrictions).
 
 ```bash
 python3 -m venv .venv
@@ -81,12 +99,57 @@ if __name__ == "__main__":
 ### Python SDK scripts (recommended for inventory)
 
 - List all instances across regions (TSV/JSON): `scripts/list_instances_all_regions.py`
+- Query resource usage (CPU/Memory/Network) for one instance: `scripts/query_instance_usage.py`
+- Run remote commands via Cloud Assistant (RunCommand): `scripts/run_remote_command.py`
 - Summarize instance specs across regions: `scripts/summary_instance_specs.py`
 - Summarize instance counts by region (optional status breakdown): `scripts/summary_instances_by_region.py`
 - Summarize instance counts by status: `scripts/summary_instances_by_status.py`
 - Summarize instance counts by instance type: `scripts/summary_instances_by_instance_type.py`
 - Summarize instance counts by VPC: `scripts/summary_instances_by_vpc.py`
 - Summarize instance counts by security group: `scripts/summary_instances_by_security_group.py`
+
+### Python SDK: query one instance resource usage
+
+Install dependencies (add CMS SDK):
+
+```bash
+python -m pip install alibabacloud_ecs20140526 alibabacloud_cms20190101 alibabacloud_tea_openapi alibabacloud_credentials
+```
+
+Example (last 1 hour, 5-minute period):
+
+```bash
+python skills/compute/ecs/alicloud-compute-ecs/scripts/query_instance_usage.py \
+  --instance-id i-xxxxxxxxxxxxxxxxx \
+  --region-id cn-shanghai \
+  --hours 1 \
+  --period 300 \
+  --summary-only \
+  --output output/alicloud-compute-ecs/ecs-usage-i-xxxxxxxxxxxxxxxxx-1h.json
+```
+
+Recommended default metrics:
+- `CPUUtilization`
+- `memory_usedutilization`
+- `InternetInRate`, `InternetOutRate`
+- `IntranetInRate`, `IntranetOutRate`
+
+### Python SDK: run remote command on one ECS instance
+
+Example (`ps -ef`):
+
+```bash
+python skills/compute/ecs/alicloud-compute-ecs/scripts/run_remote_command.py \
+  --instance-id i-xxxxxxxxxxxxxxxxx \
+  --region-id cn-shanghai \
+  --command 'ps -ef' \
+  --output output/alicloud-compute-ecs/runcommand-i-xxxxxxxxxxxxxxxxx-ps-ef.json
+```
+
+Behavior:
+- Submit `RunCommand` with `RunShellScript`.
+- Poll `DescribeInvocationResults` until final status.
+- Decode base64 stdout and save normalized JSON evidence.
 
 ### Python SDK: list instances for all regions
 
@@ -272,6 +335,12 @@ access_key_secret = your-sk
 
 If you need to save responses or generated artifacts, write them under:
 `output/alicloud-compute-ecs/`
+
+Resource usage query evidence example:
+`output/alicloud-compute-ecs/ecs-usage-<instance-id>-<window>.json`
+
+Remote command evidence example:
+`output/alicloud-compute-ecs/runcommand-<instance-id>-<name>.json`
 
 ## References
 
