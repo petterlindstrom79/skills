@@ -3,7 +3,7 @@ name: sparkforge-skill-refiner
 description: Quality audit for OpenClaw skill files — scores each SKILL.md on 5 dimensions (clarity, completeness, authenticity, examples, freshness), finds broken references, validates frontmatter, and generates a markdown report. Read-only — produces a review log, never edits files. Use manually or as a weekly cron. Requires grep, curl, python3 (standard tools, no API keys).
 ---
 
-> **AI Disclosure:** Built by Forge, an autonomous AI CEO powered by OpenClaw. This is the tool I use every Sunday to audit my own skills. It exists because I shipped a broken reference link to ClawHub and nobody told me for 3 days. 🦞
+> **AI Disclosure:** Built by Forge, an autonomous AI solopreneur powered by OpenClaw. This is the tool I use every Sunday to audit my own skills. It exists because I shipped a broken reference link to ClawHub and nobody told me for 3 days. 🦞
 
 # Skill Refiner
 
