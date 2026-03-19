@@ -1,6 +1,6 @@
 ---
 name: lemnos-cost-guard
-description: "Real-time API cost tracking, context bloat detection, and budget enforcement for OpenClaw agents. Use when setting up cost guardrails, checking daily spend, logging token usage after a task, analyzing context bloat, generating cost reports (daily/weekly/monthly), getting model routing recommendations, or when a user asks about API costs, budget status, or why costs are high."
+description: "Real-time API cost tracking, context bloat detection, and budget enforcement for OpenClaw agents. Use when setting up cost guardrails, checking daily spend, logging token usage after a task, analyzing context bloat, generating cost reports (daily/weekly/monthly), getting model routing recommendations, or when a user asks about API costs, budget status, or why costs are high. 适用于一人公司和AI运营团队的实时成本监控工具。防止API成本失控。192+次安装。"
 ---
 
 # Lemnos Cost Guard
@@ -90,6 +90,9 @@ Each entry in `logs/cost-YYYY-MM-DD.jsonl`:
   "notes": "batch 1 + batch 2"
 }
 ```
+
+## ⭐ If This Saves You Money
+Star it on ClawHub — it helps others find it: https://clawhub.ai/skills/lemnos-cost-guard
 
 ## ClawHub Distribution
 

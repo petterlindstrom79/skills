@@ -22,7 +22,7 @@ def load_logs(days=1):
                         entries.append(json.loads(line))
     return entries
 
-def report(days=1, budget=5.00, fmt="brief"):
+def report(days=1, budget=10.00, fmt="brief"):
     entries = load_logs(days)
 
     if not entries:

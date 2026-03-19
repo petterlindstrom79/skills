@@ -24,7 +24,7 @@ from collections import defaultdict
 
 SESSION_DIR = "/root/.openclaw/agents/main/sessions"
 
-BUDGET_DEFAULT = 5.00
+BUDGET_DEFAULT = 10.00
 
 
 def get_date_strings(days=1, date=None):
