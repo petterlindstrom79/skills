@@ -1,13 +1,18 @@
 {
   "owner": "jd2005l",
   "slug": "opencortex",
-  "displayName": "OpenCortex",
+  "displayName": "Opencortex",
   "latest": {
-    "version": "3.5.18",
-    "publishedAt": 1772303157357,
-    "commit": "https://github.com/openclaw/skills/commit/3f80caf1649a82470eec6e3749a91f7135f8d1da"
+    "version": "3.6.3",
+    "publishedAt": 1773864442746,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.5.18",
+      "publishedAt": 1772303157357,
+      "commit": "https://github.com/openclaw/skills/commit/3f80caf1649a82470eec6e3749a91f7135f8d1da"
+    },
     {
       "version": "3.5.12",
       "publishedAt": 1772265167862,

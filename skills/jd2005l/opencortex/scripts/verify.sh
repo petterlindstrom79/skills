@@ -84,6 +84,47 @@ if command -v openclaw &>/dev/null; then
     else
       check "No invalid model overrides in crons" "ok"
     fi
+    # Check cron timeouts are sufficient
+    if command -v python3 &>/dev/null; then
+      DISTILL_TIMEOUT=$(echo "$CRON_JSON" | python3 -c "
+import sys, json
+try:
+  data = json.load(sys.stdin)
+  if isinstance(data, list):
+    for c in data:
+      name = c.get('name','')
+      if 'distill' in name.lower():
+        print(c.get('timeoutSeconds', c.get('timeout_seconds', c.get('timeout', 0))))
+        break
+except: pass
+" 2>/dev/null || echo "")
+      SYNTH_TIMEOUT=$(echo "$CRON_JSON" | python3 -c "
+import sys, json
+try:
+  data = json.load(sys.stdin)
+  if isinstance(data, list):
+    for c in data:
+      name = c.get('name','')
+      if 'synth' in name.lower():
+        print(c.get('timeoutSeconds', c.get('timeout_seconds', c.get('timeout', 0))))
+        break
+except: pass
+" 2>/dev/null || echo "")
+      if [ -n "$DISTILL_TIMEOUT" ] && [ "$DISTILL_TIMEOUT" -gt 0 ] 2>/dev/null; then
+        if [ "$DISTILL_TIMEOUT" -lt 300 ]; then
+          check "Distillation cron timeout is ${DISTILL_TIMEOUT}s — recommended minimum is 300s (set to 600s for best results)" "warn"
+        else
+          check "Distillation cron timeout: ${DISTILL_TIMEOUT}s (ok)" "ok"
+        fi
+      fi
+      if [ -n "$SYNTH_TIMEOUT" ] && [ "$SYNTH_TIMEOUT" -gt 0 ] 2>/dev/null; then
+        if [ "$SYNTH_TIMEOUT" -lt 300 ]; then
+          check "Weekly synthesis cron timeout is ${SYNTH_TIMEOUT}s — recommended minimum is 300s for distillation, 600s for synthesis" "warn"
+        else
+          check "Weekly synthesis cron timeout: ${SYNTH_TIMEOUT}s (ok)" "ok"
+        fi
+      fi
+    fi
   fi
 else
   check "openclaw CLI not found — cannot verify cron jobs" "fail"
@@ -106,12 +147,12 @@ if [ -f "$WORKSPACE/MEMORY.md" ]; then
   # Context budget: check MEMORY.md size
   MEM_SIZE=$(wc -c < "$WORKSPACE/MEMORY.md" 2>/dev/null | tr -d ' ')
   MEM_KB=$(( MEM_SIZE / 1024 ))
-  if [ "$MEM_SIZE" -le 3072 ]; then
-    check "MEMORY.md size: ${MEM_KB}KB (within 3KB budget)" "ok"
-  elif [ "$MEM_SIZE" -le 5120 ]; then
-    check "MEMORY.md size: ${MEM_KB}KB (over 3KB target — consider moving verbose content to project/memory files)" "warn"
+  if [ "$MEM_SIZE" -le 5120 ]; then
+    check "MEMORY.md size: ${MEM_KB}KB (within 5KB target)" "ok"
+  elif [ "$MEM_SIZE" -le 8192 ]; then
+    check "MEMORY.md size: ${MEM_KB}KB — consider moving lessons to memory/lessons.md" "warn"
   else
-    check "MEMORY.md size: ${MEM_KB}KB (well over 3KB — loaded every session, move content to dedicated files)" "warn"
+    check "MEMORY.md size: ${MEM_KB}KB — too large, will slow every session boot" "fail"
   fi
 else
   check "MEMORY.md not found" "fail"
@@ -158,13 +199,13 @@ if command -v openclaw >/dev/null 2>&1; then
 
   # Check MEMORY.md size (should stay small for boot performance)
   if [ -f "$WORKSPACE/MEMORY.md" ]; then
-    MEM_SIZE=$(du -k "$WORKSPACE/MEMORY.md" 2>/dev/null | cut -f1)
-    if [ "$MEM_SIZE" -le 5 ]; then
-      check "MEMORY.md is ${MEM_SIZE}KB (target: < 5KB)" "ok"
-    elif [ "$MEM_SIZE" -le 10 ]; then
-      check "MEMORY.md is ${MEM_SIZE}KB — consider trimming (target: < 5KB)" "warn"
+    MEM_SIZE_KB=$(du -k "$WORKSPACE/MEMORY.md" 2>/dev/null | cut -f1)
+    if [ "$MEM_SIZE_KB" -le 5 ]; then
+      check "MEMORY.md is ${MEM_SIZE_KB}KB (target: < 5KB)" "ok"
+    elif [ "$MEM_SIZE_KB" -le 8 ]; then
+      check "MEMORY.md is ${MEM_SIZE_KB}KB — consider moving lessons to memory/lessons.md" "warn"
     else
-      check "MEMORY.md is ${MEM_SIZE}KB — too large, will slow boot (target: < 5KB)" "fail"
+      check "MEMORY.md is ${MEM_SIZE_KB}KB — too large, will slow every session boot" "fail"
     fi
   fi
 else

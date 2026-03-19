@@ -53,7 +53,7 @@ bash skills/opencortex/scripts/install.sh
 bash skills/opencortex/scripts/install.sh --dry-run
 ```
 
-The installer will ask about optional features (encrypted vault, voice profiling, infrastructure collection, git backup). It's safe to re-run — it skips anything that already exists. The installer itself makes no network calls — it only creates local files and registers cron jobs.
+The installer will ask about optional features (encrypted vault, voice profiling, infrastructure collection, git backup) and your preferred AI model for cron jobs (e.g. `sonnet`, `opus`, `haiku`). Saved to `.opencortex-model`. It's safe to re-run — it skips anything that already exists. The installer itself makes no network calls — it only creates local files and registers cron jobs.
 
 ```bash
 # 3. Verify everything is working (read-only — checks files and cron jobs, changes nothing)
