@@ -1,91 +1,105 @@
 ---
 name: system-watchdog
-description: System resource monitoring that detects wasteful or suspicious processes. Outputs structured JSON for any consumer.
+description: System resource monitoring. Detects actionable anomalies (memory pressure, runaway processes, disk pressure) and reports only when something needs attention. Optimized for few, high-signal alerts. Works on both Linux and macOS.
 ---
 
 # System Watchdog
 
-Monitor system resources and flag wasteful or suspicious processes. Works standalone as a bash script — see `openclaw.md` for scheduled cron setup.
+System watchdog for your machine. Detect real, actionable anomalies and stay quiet about normal steady-state conditions. Auto-detects Linux vs macOS.
 
-## Standalone Usage
+## Goal
 
-Run the check script directly — no OpenClaw required:
+Optimize for **few, high-signal alerts**.
+
+Do **not** alert on:
+- process age alone (long-running is not "stale")
+- Docker/container/virtualization baseline memory usage
+- absolute disk-used GB unless near a real limit
+- generic top-process lists without an actual anomaly
+
+Do alert on:
+- **memory pressure that is worsening** (swap growth, low available memory, macOS compressor pressure)
+- **runaway process growth** (memory leak signals via delta tracking)
+- **sustained abnormal CPU burn** (>2 cores for >15 min)
+- **disk pressure near a practical limit** (>90% or <20 GB free)
+
+## How to Invoke
 
 ```bash
-bash check.sh
+bash ~/.openclaw/skills/system-watchdog/check.sh
 ```
 
-Outputs a JSON object to stdout. Parse it however you like — pipe to `jq`, feed to an agent, integrate into your own monitoring stack.
+The script outputs JSON to stdout. Parse the output and decide whether to report.
 
-### Output Format
+Override the state file path: `SYSTEM_WATCHDOG_STATE=/path/to/state.json`
+
+## Output Format
 
 ```json
 {
   "suspicious": true,
+  "verdict": "watch|investigate|act_now|ok",
+  "os": "Darwin|Linux",
   "summary": {
-    "ram": "12.3/31.2 GB (39%)",
-    "swap": "0.5/8.0 GB (6%)",
-    "load": "1.2/0.8/0.6",
-    "cores": 8,
-    "disk": "120/256 GB (45%)"
+    "ram": "19.3/32.0 GB (60.4%)",
+    "swap": "1.6/3.0 GB",
+    "swap_delta": "+0.2 GB",
+    "load": "3.30/2.21/2.17",
+    "cores": 10,
+    "disk": "14/926 GB (3%)",
+    "available": "8.50 GB available",
+    "free": "0.08 GB truly free",
+    "inactive": "11.88 GB inactive/speculative",
+    "compressed": "5.16 GB compressed"
   },
-  "issues": [
-    {
-      "type": "high_ram",
-      "description": "claude (PID 1234) 4650MB RAM",
-      "details": { "pid": 1234, "name": "claude", "cpu_pct": 2.1, "mem_mb": 4650, "elapsed": "3d" }
-    }
-  ],
-  "top_processes": [
-    { "pid": 1234, "name": "claude", "cpu_pct": 2.1, "mem_mb": 4650, "elapsed": "3d" }
-  ]
+  "issues": [ ],
+  "top_processes": [ ],
+  "ignored_normals": [ ]
 }
 ```
 
-- `suspicious: true` → at least one issue exceeded a threshold
-- `suspicious: false` → system looks healthy
+Note: `available` is Linux-only (MemAvailable). `free`, `inactive`, `compressed` are macOS-only (vm_stat breakdown).
 
-### Thresholds
+## Detection Philosophy
 
-| Check | Threshold | Issue Type |
-|-------|-----------|------------|
-| Process RAM | > 4096 MB | `high_ram` |
-| Process CPU | > 50% | `high_cpu` |
-| Stale processes | Running > 2 days AND using > 100 MB or > 1% CPU | `stale` |
-| Disk usage | > 80% on root mount | `disk` |
+### 1. Memory pressure, not just RAM usage
+High RAM usage alone is noisy. The script tracks **swap growth since last run** and low available/free memory as stronger signals. On macOS, high compressor usage with low free pages is also flagged.
 
-### Common Offenders
+### 2. Runaway behavior, not stale age
+Never flag a process just because it has been running a long time. Look for memory growth (delta since last run) and sustained CPU instead.
 
-- `claude` / `codex` — AI coding agents left running for days
-- `whisper` / `whisper-server` — speech-to-text servers consuming GPU/RAM
-- `python` / `python3` — runaway scripts or leaked processes
-- `node` — dev servers or builds that never stopped
+### 3. Disk only when it matters
+Ignore absolute disk usage. Only report disk when it is actually nearing a practical limit.
 
-## Agent Workflow (for AI agents)
+## Agent Workflow
 
 1. Run `check.sh`
 2. Parse the JSON output
-3. If `suspicious` is `false` → do nothing (no report needed)
-4. If `suspicious` is `true` → format a concise report and notify the user
+3. If `suspicious` is `false` → do nothing (no message)
+4. If `suspicious` is `true` → format a concise report
+5. Lead with the **verdict** and the 1–3 most important findings
 
-### Suggested Report Format
+## Report Format
 
 ```
-⚠️ System Watchdog Report
+⚠️ System Watchdog — VERDICT
 
-📊 System: RAM 12.3/31.2 GB (39%) | Swap 0.5/8.0 GB (6%) | Load 1.2/0.8/0.6
-💾 Disk: / 45% (120/256 GB)
+Why this matters:
+- <1–3 concise findings from issues[].why>
 
-🔴 Issues Found:
+Evidence:
+- RAM <summary.ram>
+- Swap <summary.swap> (<summary.swap_delta>)
+- Load <summary.load>
 
-HIGH RAM — claude (PID 1234)
-  CPU: 2.1% | RAM: 4650 MB | Running: 3 days
-  → Likely stale, safe to kill
+Recommended:
+- <issue suggested_action>
 
-💡 Suggested: kill 1234
+Ignored: process age, Docker baseline, disk absolute usage
 ```
 
-## Platform Notes
+Keep it short. Do **not** dump every top process unless it directly supports an issue.
 
-- **macOS only** — `check.sh` uses `sysctl`, `vm_stat`, and macOS `ps` flags. It won't work on Linux without adaptation (replace with `free`, `/proc/meminfo`, etc.).
-- **Intermittent jq-style parse error** — the script occasionally fails on first run due to a race in process scanning. Retry once before reporting failure.
+## State Tracking
+
+The script persists lightweight state to `~/.openclaw/workspace/state/system-watchdog-state.json` so it can detect **changes since last run** (swap growth, per-process memory growth) rather than only snapshot values.
