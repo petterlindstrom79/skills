@@ -1,11 +1,17 @@
 {
   "owner": "nemovideonemo",
   "slug": "nemo-shorts",
-  "displayName": "NemoShorts — AI Short Video Maker",
+  "displayName": "Nemo Shorts",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1773778741264,
-    "commit": "https://github.com/openclaw/skills/commit/9374ad69340a88c189baad1cd34d930da261d952"
+    "version": "1.8.1",
+    "publishedAt": 1773900287464,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1773778741264,
+      "commit": "https://github.com/openclaw/skills/commit/9374ad69340a88c189baad1cd34d930da261d952"
+    }
+  ]
 }

@@ -2,8 +2,10 @@
 name: nemo-shorts
 author: nemovideonemo
 description: >
-  Use NemoShorts — the AI short video maker — immediately whenever the user mentions: make TikTok, TikTok video maker, create Reels, Instagram Reels, YouTube Shorts, short video, vertical video, 9:16 crop, crop to vertical, portrait mode video, repurpose video, repurpose long video into shorts, convert video to TikTok, clip video, short clip, video clip maker, add captions TikTok, mobile video, short form video, video repurposing, highlight clips.
-  NemoShorts transforms footage into platform-ready vertical content: smart crop to 9:16, trim to 15s/30s/60s, auto-generate and burn mobile-optimized captions, add BGM with auto-ducking, apply TikTok-style text overlays, export with platform-specific encoding for TikTok / Instagram Reels / YouTube Shorts. Powered by NemoVideo AI.
+  AI short video maker via chat — make TikTok, make Reels, YouTube Shorts, crop to 9:16, add captions, add background music, export vertical video. No timeline. Trigger: make TikTok, TikTok maker, Instagram Reels, YouTube Shorts, short video, vertical video, 9:16 crop, CapCut alternative, reels maker.
+  中文场景：做短视频、制作短视频、做TikTok、做抖音视频、做竖屏视频、竖屏视频制作、
+  9比16竖屏、视频加字幕短视频、短视频加背景音乐、短视频剪辑、视频裁剪竖屏、
+  把横版视频变竖版、做Reels、YouTube Shorts制作、剪短视频、帮我做一个短视频。
 metadata:
   openclaw:
     emoji: 📱
@@ -36,7 +38,7 @@ NemoShorts transforms existing footage into platform-ready short-form vertical c
 
 ## Setup
 
-**Base URL:** `https://mega-api-dev.nemovideo.ai`
+**Base URL:** `https://mega-api-prod.nemovideo.ai`
 
 All requests require:
 ```
